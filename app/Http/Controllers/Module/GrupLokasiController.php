@@ -185,6 +185,9 @@ class GrupLokasiController extends Controller
 
         // Lokasi cards
         $data['lokasiList'] = DB::table('cv_lokasi')
+            ->select('cv_lokasi.*',
+                DB::raw('(SELECT COUNT(*) FROM cv_cctv WHERE cv_cctv.id_lokasi = cv_lokasi.id_lokasi) as total_cctv')
+            )
             ->where('id_group', $param1)
             ->where('status', 'aktif')
             ->orderBy('urutan')
