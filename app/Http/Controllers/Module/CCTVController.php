@@ -73,6 +73,11 @@ class CCTVController extends Controller
         }
         $data['cctvList'] = $cctvQuery->get();
 
+        $data['ezvizAkunList'] = DB::table('cv_ezviz_akun')
+            ->where('status', 'aktif')
+            ->orderBy('nama_akun')
+            ->get();
+
         return view('module.content', ['data' => $data]);
     }
 
