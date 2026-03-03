@@ -469,6 +469,8 @@ function doImport() {
         btn.innerHTML = '<i class="bi bi-plus-circle me-2"></i>Tambahkan ke Sistem';
         alert('Error: ' + e.message);
     });
+}
+
 // ── Tambah Device ke EZVIZ ───────────────────────────────────
 function openAddDeviceModal(akunId, akunNama) {
     document.getElementById('addDevAkunId').value        = akunId;

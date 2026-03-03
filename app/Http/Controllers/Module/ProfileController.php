@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Module;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use App\Helpers\LogHelper;
 
 class ProfileController extends Controller
@@ -32,14 +33,36 @@ class ProfileController extends Controller
         $request->validate([
             'nama_lengkap' => 'required|string|max:100',
             'email'        => 'nullable|email|max:100',
+            'foto_profil'  => 'nullable|image|mimes:jpeg,png,webp|max:2048',
         ]);
+
+        $updateData = [
+            'nama_lengkap' => $request->nama_lengkap,
+            'email'        => $request->email,
+        ];
+
+        // Handle foto upload
+        if ($request->hasFile('foto_profil')) {
+            $dir = public_path('assets/img/profil');
+            if (!is_dir($dir)) mkdir($dir, 0755, true);
+
+            // Delete old foto if exists
+            $existing = DB::table('cv_pengguna')
+                ->where('id_pengguna', $user['id_pengguna'])
+                ->value('foto');
+            if ($existing && file_exists($dir . '/' . $existing)) {
+                @unlink($dir . '/' . $existing);
+            }
+
+            $ext      = $request->file('foto_profil')->getClientOriginalExtension();
+            $filename = 'profil_' . $user['id_pengguna'] . '_' . time() . '.' . $ext;
+            $request->file('foto_profil')->move($dir, $filename);
+            $updateData['foto'] = $filename;
+        }
 
         DB::table('cv_pengguna')
             ->where('id_pengguna', $user['id_pengguna'])
-            ->update([
-                'nama_lengkap' => $request->nama_lengkap,
-                'email'        => $request->email,
-            ]);
+            ->update($updateData);
 
         // Refresh session
         $pengguna = DB::table('cv_pengguna')
@@ -49,6 +72,7 @@ class ProfileController extends Controller
         $sessionUser = session()->get('user');
         $sessionUser['nama_lengkap'] = $pengguna->nama_lengkap;
         $sessionUser['email']        = $pengguna->email;
+        $sessionUser['foto']         = $pengguna->foto;
         session()->put('user', $sessionUser);
 
         LogHelper::log('Update Profil', 'Profile', 'Update profil user: ' . $pengguna->nama_lengkap);

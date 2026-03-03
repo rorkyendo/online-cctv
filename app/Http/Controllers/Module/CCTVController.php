@@ -452,9 +452,9 @@ class CCTVController extends Controller
     // -------------------------------------------------------
     // Refresh EZVIZ token (AJAX)
     // -------------------------------------------------------
-    public function refreshToken(Request $request)
+    public function refreshToken(Request $request, $param1 = null)
     {
-        $idEzvizAkun = $request->input('id_ezviz_akun');
+        $idEzvizAkun = $param1 ?? $request->input('id_ezviz_akun');
         $akun = GeneralModel::getByIdGeneral('cv_ezviz_akun', 'first', 'id_ezviz_akun', $idEzvizAkun);
 
         if (!$akun) {
