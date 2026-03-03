@@ -16,6 +16,9 @@
         @endif
     </div>
     <div class="d-flex gap-2">
+        <a href="{{ url('/panel/cctv/liveViewLokasi/' . $data['lokasi']->id_lokasi) }}" class="btn btn-success">
+            <i class="bi bi-camera-video-fill me-2"></i>Live View Semua
+        </a>
         <a href="{{ url('/panel/cctv/tambahCCTV') }}" class="btn btn-primary">
             <i class="bi bi-plus-lg me-2"></i>Tambah CCTV
         </a>

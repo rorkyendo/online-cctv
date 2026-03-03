@@ -288,6 +288,61 @@ class CCTVController extends Controller
     }
 
     // -------------------------------------------------------
+    // Live View Lokasi — grid semua CCTV dalam 1 lokasi
+    // -------------------------------------------------------
+    public function liveViewLokasi(Request $request, $param1)
+    {
+        $lokasi = DB::table('cv_lokasi')
+            ->leftJoin('cv_lokasi_group', 'cv_lokasi.id_group', '=', 'cv_lokasi_group.id_group')
+            ->select('cv_lokasi.*', 'cv_lokasi_group.nama_group', 'cv_lokasi_group.id_group')
+            ->where('cv_lokasi.id_lokasi', $param1)
+            ->first();
+
+        if (!$lokasi) {
+            session()->flash('error', 'Lokasi tidak ditemukan!');
+            return redirect()->to('/panel/lokasi/daftarLokasi');
+        }
+
+        if ($lokasi->id_group && !AccessHelper::cekCctvGroupAkses($lokasi->id_group)) {
+            session()->flash('error', 'Anda tidak memiliki akses ke lokasi ini!');
+            return redirect()->to('/panel/lokasi/daftarLokasi');
+        }
+
+        $cctvList = DB::table('cv_cctv')
+            ->join('cv_lokasi', 'cv_cctv.id_lokasi', '=', 'cv_lokasi.id_lokasi')
+            ->join('cv_lokasi_group', 'cv_lokasi.id_group', '=', 'cv_lokasi_group.id_group')
+            ->join('cv_ezviz_akun', 'cv_cctv.id_ezviz_akun', '=', 'cv_ezviz_akun.id_ezviz_akun')
+            ->select(
+                'cv_cctv.*',
+                'cv_lokasi.nama_lokasi',
+                'cv_lokasi.lantai',
+                'cv_lokasi_group.nama_group',
+                'cv_lokasi_group.id_group',
+                'cv_ezviz_akun.nama_akun as nama_ezviz'
+            )
+            ->where('cv_cctv.id_lokasi', $param1)
+            ->orderBy('cv_cctv.nama_cctv')
+            ->get();
+
+        LogHelper::log('Live View Lokasi', 'CCTV', 'Live view lokasi: ' . $lokasi->nama_lokasi . ' (' . $cctvList->count() . ' kamera)');
+
+        // Reuse liveview-group blade — pass lokasi as 'group' for title/label compatibility
+        $fakeGroup = (object) [
+            'id_group'   => $lokasi->id_group,
+            'nama_group' => $lokasi->nama_lokasi,
+            'deskripsi'  => $lokasi->nama_group ? 'Lokasi: ' . $lokasi->nama_group : null,
+        ];
+
+        $data             = $this->getCommonData();
+        $data['title']    = 'Live View: ' . $lokasi->nama_lokasi;
+        $data['content']  = 'module.cctv.liveview-group';
+        $data['group']    = $fakeGroup;
+        $data['cctvList'] = $cctvList;
+
+        return view('module.content', ['data' => $data]);
+    }
+
+    // -------------------------------------------------------
     // Live View Group — grid semua CCTV dalam 1 grup
     // -------------------------------------------------------
     public function liveViewGroup(Request $request, $param1)
