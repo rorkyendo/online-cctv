@@ -166,6 +166,9 @@ INSERT INTO `cv_modul` (`id_modul`, `nama_modul`, `controller_modul`, `class_par
 (12, 'Hapus CCTV', 'hapusCCTV', 'CCTV', '#', 'N', 4),
 (13, 'Detail CCTV', 'detailCCTV', 'CCTV', '#', 'N', 5),
 (14, 'Stream CCTV', 'streamCCTV', 'CCTV', '#', 'N', 6),
+(31, 'Live View Group', 'liveViewGroup', 'CCTV', '#', 'N', 7),
+(32, 'Live View Lokasi', 'liveViewLokasi', 'CCTV', '#', 'N', 8),
+(33, 'Capture CCTV', 'captureCCTV', 'CCTV', '#', 'N', 9),
 -- MasterData
 (15, 'Daftar Pengguna', 'daftarPengguna', 'MasterData', '/panel/masterData/daftarPengguna', 'Y', 1),
 (16, 'Tambah Pengguna', 'tambahPengguna', 'MasterData', '/panel/masterData/tambahPengguna', 'N', 2),
