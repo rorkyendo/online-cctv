@@ -283,6 +283,51 @@ class CCTVController extends Controller
     }
 
     // -------------------------------------------------------
+    // Live View Group — grid semua CCTV dalam 1 grup
+    // -------------------------------------------------------
+    public function liveViewGroup(Request $request, $param1)
+    {
+        $group = DB::table('cv_lokasi_group')->where('id_group', $param1)->first();
+
+        if (!$group) {
+            session()->flash('error', 'Grup lokasi tidak ditemukan!');
+            return redirect()->to('/panel/grupLokasi/daftarGrupLokasi');
+        }
+
+        if (!AccessHelper::cekCctvGroupAkses($param1)) {
+            session()->flash('error', 'Anda tidak memiliki akses ke grup ini!');
+            return redirect()->to('/panel/grupLokasi/daftarGrupLokasi');
+        }
+
+        $cctvList = DB::table('cv_cctv')
+            ->join('cv_lokasi', 'cv_cctv.id_lokasi', '=', 'cv_lokasi.id_lokasi')
+            ->join('cv_lokasi_group', 'cv_lokasi.id_group', '=', 'cv_lokasi_group.id_group')
+            ->join('cv_ezviz_akun', 'cv_cctv.id_ezviz_akun', '=', 'cv_ezviz_akun.id_ezviz_akun')
+            ->select(
+                'cv_cctv.*',
+                'cv_lokasi.nama_lokasi',
+                'cv_lokasi.lantai',
+                'cv_lokasi_group.nama_group',
+                'cv_lokasi_group.id_group',
+                'cv_ezviz_akun.nama_akun as nama_ezviz'
+            )
+            ->where('cv_lokasi_group.id_group', $param1)
+            ->orderBy('cv_lokasi.nama_lokasi')
+            ->orderBy('cv_cctv.nama_cctv')
+            ->get();
+
+        LogHelper::log('Live View Group', 'CCTV', 'Live view group: ' . $group->nama_group . ' (' . $cctvList->count() . ' kamera)');
+
+        $data               = $this->getCommonData();
+        $data['title']      = 'Live View: ' . $group->nama_group;
+        $data['content']    = 'module.cctv.liveview-group';
+        $data['group']      = $group;
+        $data['cctvList']   = $cctvList;
+
+        return view('module.content', ['data' => $data]);
+    }
+
+    // -------------------------------------------------------
     // Stream CCTV (AJAX - returns stream URL)
     // -------------------------------------------------------
     public function streamCCTV(Request $request, $param1)

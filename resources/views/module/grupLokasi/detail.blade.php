@@ -11,6 +11,9 @@
         <span class="text-muted fs-7">{{ $data['grupLokasi']->deskripsi ?? 'Daftar lokasi dalam group ini' }}</span>
     </div>
     <div class="d-flex gap-2">
+        <a href="{{ url('/panel/cctv/liveViewGroup/' . $data['grupLokasi']->id_group) }}" class="btn btn-success">
+            <i class="bi bi-camera-video-fill me-2"></i>Live View Semua CCTV
+        </a>
         <a href="{{ url('/panel/lokasi/tambahLokasi') }}" class="btn btn-primary">
             <i class="bi bi-plus-lg me-2"></i>Tambah Lokasi
         </a>

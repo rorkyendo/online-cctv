@@ -60,6 +60,7 @@ Route::middleware(['auth'])->prefix('panel')->group(function () {
             Route::any('/updateCCTV/{param1?}/{param2?}', [CCTVController::class, 'updateCCTV'])->name('updateCCTV');
             Route::get('/hapusCCTV/{param1}', [CCTVController::class, 'hapusCCTV'])->name('hapusCCTV');
             Route::get('/detailCCTV/{param1}', [CCTVController::class, 'detailCCTV'])->name('detailCCTV');
+            Route::get('/liveViewGroup/{param1}', [CCTVController::class, 'liveViewGroup'])->name('liveViewGroup');
             // AJAX Endpoints
             Route::post('/streamCCTV/{param1}', [CCTVController::class, 'streamCCTV'])->name('streamCCTV');
             Route::post('/captureCCTV/{param1}', [CCTVController::class, 'captureCCTV'])->name('captureCCTV');
