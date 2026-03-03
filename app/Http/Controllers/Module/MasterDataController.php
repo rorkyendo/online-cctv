@@ -43,6 +43,7 @@ class MasterDataController extends Controller
                 'password' => 'required|min:6',
                 'hak_akses' => 'required',
                 'email' => 'nullable|email|unique:cv_pengguna,email',
+                'foto_profil' => 'nullable|image|mimes:jpeg,png,webp|max:2048',
             ], [
                 'username.unique' => 'Username sudah digunakan!',
                 'email.unique' => 'Email sudah digunakan!',
@@ -54,16 +55,27 @@ class MasterDataController extends Controller
                 return redirect()->back()->withInput();
             }
 
-            GeneralModel::create('cv_pengguna', [
+            $createData = [
                 'nama_lengkap' => $request->nama_lengkap,
-                'username' => $request->username,
-                'password' => sha1($request->password),
-                'email' => $request->email,
-                'no_telp' => $request->no_telp,
-                'hak_akses' => $request->hak_akses,
-                'status' => $request->status ?? 'actived',
+                'username'     => $request->username,
+                'password'     => sha1($request->password),
+                'email'        => $request->email,
+                'no_telp'      => $request->no_telp,
+                'hak_akses'    => $request->hak_akses,
+                'status'       => $request->status ?? 'actived',
                 'created_time' => date('Y-m-d H:i:s'),
-            ]);
+            ];
+
+            if ($request->hasFile('foto_profil') && $request->file('foto_profil')->isValid()) {
+                $dir = public_path('assets/img/profil');
+                if (!is_dir($dir)) mkdir($dir, 0755, true);
+                $ext  = $request->file('foto_profil')->getClientOriginalExtension();
+                $name = 'profil_' . preg_replace('/[^a-z0-9]/', '', strtolower($request->username)) . '_' . time() . '.' . $ext;
+                $request->file('foto_profil')->move($dir, $name);
+                $createData['foto'] = $name;
+            }
+
+            GeneralModel::create('cv_pengguna', $createData);
 
             LogHelper::log('Tambah Pengguna', 'MasterData', 'Tambah user: ' . $request->username);
             session()->flash('success', 'Pengguna berhasil ditambahkan!');
@@ -82,14 +94,26 @@ class MasterDataController extends Controller
         if ($param2 === 'save') {
             $updateData = [
                 'nama_lengkap' => $request->nama_lengkap,
-                'email' => $request->email,
-                'no_telp' => $request->no_telp,
-                'hak_akses' => $request->hak_akses,
-                'status' => $request->status ?? 'actived',
+                'email'        => $request->email,
+                'no_telp'      => $request->no_telp,
+                'hak_akses'    => $request->hak_akses,
+                'status'       => $request->status ?? 'actived',
             ];
 
             if (!empty($request->password)) {
                 $updateData['password'] = sha1($request->password);
+            }
+
+            if ($request->hasFile('foto_profil') && $request->file('foto_profil')->isValid()) {
+                $dir = public_path('assets/img/profil');
+                if (!is_dir($dir)) mkdir($dir, 0755, true);
+                // Delete old foto
+                $oldFoto = DB::table('cv_pengguna')->where('id_pengguna', $param1)->value('foto');
+                if ($oldFoto && file_exists($dir . '/' . $oldFoto)) @unlink($dir . '/' . $oldFoto);
+                $ext  = $request->file('foto_profil')->getClientOriginalExtension();
+                $name = 'profil_' . $param1 . '_' . time() . '.' . $ext;
+                $request->file('foto_profil')->move($dir, $name);
+                $updateData['foto'] = $name;
             }
 
             GeneralModel::updateById('cv_pengguna', $updateData, 'id_pengguna', $param1);
