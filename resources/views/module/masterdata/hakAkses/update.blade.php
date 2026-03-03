@@ -1,12 +1,15 @@
 @php
     use App\Facades\GeneralModelFacade as GeneralModel;
-    $hakAkses       = $data['hakAkses'];
-    $modulAkses     = $hakAkses->modul_akses ? json_decode($hakAkses->modul_akses, true) : [];
-    $parentModulAkses = $hakAkses->parent_modul_akses ? json_decode($hakAkses->parent_modul_akses, true) : [];
-    $cctvGroupAkses = $hakAkses->cctv_group_akses ? json_decode($hakAkses->cctv_group_akses, true) : [];
-    if (!is_array($modulAkses)) $modulAkses = [];
+    $hakAkses         = $data['hakAkses'];
+    $decoded          = $hakAkses->modul_akses ? json_decode($hakAkses->modul_akses, true) : [];
+    $modulAkses       = is_array($decoded) ? ($decoded['modul'] ?? $decoded) : [];
+    $decodedPM        = $hakAkses->parent_modul_akses ? json_decode($hakAkses->parent_modul_akses, true) : [];
+    $parentModulAkses = is_array($decodedPM) ? ($decodedPM['parent_modul'] ?? $decodedPM) : [];
+    $cctvGroupAkses   = $hakAkses->cctv_group_akses ? json_decode($hakAkses->cctv_group_akses, true) : [];
+    if (!is_array($modulAkses))       $modulAkses = [];
     if (!is_array($parentModulAkses)) $parentModulAkses = [];
-    if (!is_array($cctvGroupAkses)) $cctvGroupAkses = [];
+    if (!is_array($cctvGroupAkses))   $cctvGroupAkses = [];
+    $cctvGroupAkses = array_map('strval', $cctvGroupAkses);
 @endphp
 
 <div class="card shadow-sm">
@@ -33,7 +36,7 @@
                     <i class="bi bi-shield-check me-2 text-primary"></i>Hak Akses Modul
                 </h5>
                 <div class="row g-4">
-                    @foreach($data['parentModul'] as $pm)
+                    @foreach($data['parentModulList'] as $pm)
                     <div class="col-md-6">
                         <div class="card border">
                             <div class="card-header bg-light py-3">
