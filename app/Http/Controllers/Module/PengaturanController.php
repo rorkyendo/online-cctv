@@ -14,17 +14,42 @@ class PengaturanController extends Controller
     public function pengaturanSistem(Request $request, $param1 = '')
     {
         if ($param1 === 'save') {
-            GeneralModel::updateById('cv_identitas', [
-                'apps_name'  => $request->apps_name,
+            $fields = [
+                'apps_name'    => $request->apps_name,
                 'apps_version' => $request->apps_version,
-                'agency'     => $request->agency,
-                'address'    => $request->address,
-                'city'       => $request->city,
-                'telephon'   => $request->telephon,
-                'email'      => $request->email,
-                'website'    => $request->website,
-                'footer'     => $request->footer,
-            ], 'id_profile', 1);
+                'agency'       => $request->agency,
+                'address'      => $request->address,
+                'city'         => $request->city,
+                'telephon'     => $request->telephon,
+                'email'        => $request->email,
+                'website'      => $request->website,
+                'footer'       => $request->footer,
+            ];
+
+            $uploadDir = public_path('assets/media/logos');
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
+            if ($request->hasFile('logo_file') && $request->file('logo_file')->isValid()) {
+                $file = $request->file('logo_file');
+                $ext  = $file->getClientOriginalExtension();
+                $name = 'logo_' . time() . '.' . $ext;
+                $file->move($uploadDir, $name);
+                $fields['logo'] = 'assets/media/logos/' . $name;
+            } elseif ($request->filled('logo')) {
+                $fields['logo'] = $request->logo;
+            }
+
+            if ($request->hasFile('icon_file') && $request->file('icon_file')->isValid()) {
+                $file = $request->file('icon_file');
+                $ext  = $file->getClientOriginalExtension();
+                $name = 'icon_' . time() . '.' . $ext;
+                $file->move($uploadDir, $name);
+                $fields['icon'] = 'assets/media/logos/' . $name;
+            } elseif ($request->filled('icon')) {
+                $fields['icon'] = $request->icon;
+            }
+
+            GeneralModel::updateById('cv_identitas', $fields, 'id_profile', 1);
 
             LogHelper::log('Update Pengaturan Sistem', 'Pengaturan');
             session()->flash('success', 'Pengaturan sistem berhasil disimpan!');

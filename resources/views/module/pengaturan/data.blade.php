@@ -50,26 +50,34 @@
                 </div>
                 <div class="col-md-6">
                     <div class="mb-5">
-                        <label class="form-label fw-semibold">Logo Saat Ini</label>
+                        <label class="form-label fw-semibold">Logo</label>
                         @if(!empty($data['identitas']->logo))
                             <div class="mb-3">
-                                <img src="{{ asset($data['identitas']->logo) }}" class="h-60px" alt="Logo" />
+                                <img id="logo-preview" src="{{ asset($data['identitas']->logo) }}" class="h-60px rounded border" alt="Logo" />
                             </div>
+                        @else
+                            <div class="mb-3"><img id="logo-preview" src="#" class="h-60px rounded border d-none" alt="Logo" /></div>
                         @endif
-                        <input type="text" name="logo" class="form-control"
-                               placeholder="Path logo (contoh: assets/media/logos/logo.png)"
-                               value="{{ old('logo', $data['identitas']->logo ?? '') }}" />
+                        <input type="file" name="logo_file" id="logo_file" class="form-control mb-2"
+                               accept="image/*,.svg,.ico"
+                               onchange="previewImage(this, 'logo-preview')" />
+                        <input type="hidden" name="logo" value="{{ old('logo', $data['identitas']->logo ?? '') }}" />
+                        <div class="text-muted fs-8">Upload file baru untuk mengganti logo. Format: PNG, SVG, JPG. Maks 2MB.</div>
                     </div>
                     <div class="mb-5">
                         <label class="form-label fw-semibold">Icon / Favicon</label>
                         @if(!empty($data['identitas']->icon))
                             <div class="mb-3">
-                                <img src="{{ asset($data['identitas']->icon) }}" class="h-30px" alt="Icon" />
+                                <img id="icon-preview" src="{{ asset($data['identitas']->icon) }}" class="h-30px rounded border" alt="Icon" />
                             </div>
+                        @else
+                            <div class="mb-3"><img id="icon-preview" src="#" class="h-30px rounded border d-none" alt="Icon" /></div>
                         @endif
-                        <input type="text" name="icon" class="form-control"
-                               placeholder="Path icon (contoh: assets/media/logos/favicon.ico)"
-                               value="{{ old('icon', $data['identitas']->icon ?? '') }}" />
+                        <input type="file" name="icon_file" id="icon_file" class="form-control mb-2"
+                               accept="image/*,.svg,.ico"
+                               onchange="previewImage(this, 'icon-preview')" />
+                        <input type="hidden" name="icon" value="{{ old('icon', $data['identitas']->icon ?? '') }}" />
+                        <div class="text-muted fs-8">Upload file baru untuk mengganti icon/favicon. Format: PNG, ICO, SVG. Maks 1MB.</div>
                     </div>
                     <div class="mb-5">
                         <label class="form-label fw-semibold">Footer</label>
@@ -85,3 +93,17 @@
         </form>
     </div>
 </div>
+
+<script>
+function previewImage(input, previewId) {
+    const preview = document.getElementById(previewId);
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            preview.src = e.target.result;
+            preview.classList.remove('d-none');
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
