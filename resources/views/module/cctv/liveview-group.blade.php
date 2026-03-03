@@ -35,13 +35,25 @@
 .lv-cell.side        { opacity: .6; }
 .lv-cell.hidden-cell { display: none; }
 
-/* ── Video inside cell ───────────────────────────────────── */
-.lv-cell video {
+/* ── Player container (EZUIKit / video) ─────────────────── */
+.lv-player-container {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    display: block;
+    z-index: 1;
     background: #000;
+    overflow: hidden;
+}
+/* EZUIKit wraps in a div — force it to fill */
+.lv-player-container > div {
+    width: 100% !important;
+    height: 100% !important;
+}
+/* Force canvas to fill container */
+.lv-player-container canvas {
+    width: 100% !important;
+    height: 100% !important;
 }
 
 /* ── Overlay states ──────────────────────────────────────── */
@@ -183,9 +195,8 @@
 
         {{-- Protocol selector --}}
         <select id="globalProtocol" class="form-select form-select-sm w-auto" style="background:#2b2b3d;color:#fff;border-color:#3d3d5c;">
+            <option value="ezopen" selected>EZOPEN</option>
             <option value="hls">HLS</option>
-            <option value="flv">FLV</option>
-            <option value="rtmp">RTMP</option>
         </select>
 
         {{-- Actions --}}
@@ -224,9 +235,8 @@
              data-status="{{ $cctv->status ?? 'unknown' }}"
              onclick="toggleFocus({{ $cctv->id_cctv }})">
 
-            {{-- Video element --}}
-            <video id="vid-{{ $cctv->id_cctv }}" muted autoplay playsinline
-                   preload="none" style="display:none;"></video>
+            {{-- Player container (EZUIKit fills this) --}}
+            <div id="player-{{ $cctv->id_cctv }}" class="lv-player-container"></div>
 
             {{-- Loading overlay --}}
             <div class="lv-overlay" id="ov-load-{{ $cctv->id_cctv }}">
@@ -300,14 +310,18 @@
     </div>
 </div>
 
+{{-- EZUIKit.js — official EZVIZ web player SDK (UMD build) --}}
+<script src="https://cdn.jsdelivr.net/npm/ezuikit-js/ezuikit.js"></script>
+
 {{-- ──────────────────────────────────────────────── --}}
 <script>
-const CSRF    = '{{ csrf_token() }}';
-const hlsMap  = {};        // id_cctv → Hls instance
-const stateMap = {};       // id_cctv → 'loading'|'ok'|'error'|'idle'
-let focusedId  = null;
-let globalMuted = true;    // start muted
-let autoLoad    = true;    // load semua otomatis saat pertama
+const CSRF     = '{{ csrf_token() }}';
+const playerMap   = {};   // id_cctv → EZUIKit player or Hls instance
+const stateMap    = {};   // id_cctv → 'loading'|'ok'|'error'|'idle'
+const streamCache = {};   // id_cctv → {url, accessToken, apiUrl, protocol}
+let focusedId   = null;
+let globalMuted = true;
+let autoLoad    = true;
 
 const CCTV_IDS = @json($cctvList->pluck('id_cctv'));
 
@@ -319,10 +333,24 @@ document.querySelectorAll('.lv-cell').forEach(cell => {
     cell.addEventListener('mouseleave', () => { if(btn) btn.style.opacity = '0'; });
 });
 
+// ── Destroy existing player for a cell ───────────
+function destroyPlayer(id) {
+    const p = playerMap[id];
+    if (!p) return;
+    try {
+        if (typeof p.stop === 'function')    p.stop();
+        if (typeof p.destroy === 'function') p.destroy();
+    } catch(e) {}
+    delete playerMap[id];
+    const container = document.getElementById('player-' + id);
+    if (container) container.innerHTML = '';
+}
+
 // ── Load single CCTV stream ───────────────────────
 async function loadStream(id, protocol) {
     protocol = protocol || document.getElementById('globalProtocol').value;
     setOverlay(id, 'loading');
+    destroyPlayer(id);
 
     try {
         const res = await fetch(`/panel/cctv/streamCCTV/${id}`, {
@@ -333,7 +361,13 @@ async function loadStream(id, protocol) {
         const data = await res.json();
 
         if (data.success && data.url) {
-            playVideo(id, data.url, protocol);
+            if (data.url.startsWith('ezopen://') || protocol === 'ezopen') {
+                streamCache[id] = { url: data.url, accessToken: data.access_token, apiUrl: data.api_url, protocol: 'ezopen' };
+                playEzopen(id, data.url, data.access_token, data.api_url);
+            } else {
+                streamCache[id] = { url: data.url, protocol };
+                playHls(id, data.url);
+            }
         } else {
             setOverlay(id, 'error', data.message || 'Gagal mendapatkan URL stream');
         }
@@ -342,47 +376,86 @@ async function loadStream(id, protocol) {
     }
 }
 
-// ── Play via HLS.js ───────────────────────────────
-function playVideo(id, url, protocol) {
-    const video = document.getElementById('vid-' + id);
-    video.style.display = 'block';
+// ── Play via EZUIKit.js ───────────────────────────
+function playEzopen(id, url, accessToken, apiUrl) {
+    const container = document.getElementById('player-' + id);
+    if (!container) return;
+
+    // Measure the parent cell for accurate pixel dimensions
+    const cell = document.getElementById('cell-' + id);
+    const rect = (cell || container).getBoundingClientRect();
+    const w = Math.round(rect.width)  || 640;
+    const h = Math.round(rect.height) || 360;
+
+    try {
+        // v8.x UMD exports as EZUIKit.EZUIKitPlayer
+        const PlayerClass = (typeof EZUIKit === 'function') ? EZUIKit
+                          : (EZUIKit && EZUIKit.EZUIKitPlayer) ? EZUIKit.EZUIKitPlayer
+                          : null;
+        if (!PlayerClass) { setOverlay(id, 'error', 'EZUIKit SDK gagal dimuat'); return; }
+
+        const player = new PlayerClass({
+            id: 'player-' + id,
+            accessToken: accessToken,
+            url: url,
+            width:  w,
+            height: h,
+            scaleMode: 0,
+            audio: 0,
+            env: {
+                domain: (apiUrl || 'https://isgpopen.ezvizlife.com').replace(/\/$/, '')
+            },
+            handleSuccess: function() {
+                setOverlay(id, 'ok');
+            },
+            handleError: function(e) {
+                const code = e && (e.retcode || e.nErrorCode || e.errorCode || '');
+                const msg  = code ? 'Player error [' + code + ']' : 'Gagal memutar stream';
+                setOverlay(id, 'error', msg);
+            }
+        });
+        playerMap[id] = player;
+
+        // Fallback: if no callback fires in 20s, assume playing
+        setTimeout(() => {
+            if (stateMap[id] === 'loading') setOverlay(id, 'ok');
+        }, 20000);
+    } catch(e) {
+        setOverlay(id, 'error', 'EZUIKit error: ' + e.message);
+    }
+}
+
+// ── Play via HLS.js (fallback) ────────────────────
+function playHls(id, url) {
+    const container = document.getElementById('player-' + id);
+    container.innerHTML = '<video style="width:100%;height:100%;object-fit:contain;background:#000;" autoplay playsinline></video>';
+    const video = container.querySelector('video');
     video.muted = globalMuted;
 
-    // Destroy old HLS instance if exists
-    if (hlsMap[id]) { hlsMap[id].destroy(); delete hlsMap[id]; }
-
-    if (protocol === 'hls' || url.includes('.m3u8')) {
-        if (Hls.isSupported()) {
-            const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
-            hls.loadSource(url);
-            hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                video.play().catch(() => {});
-                setOverlay(id, 'ok');
-            });
-            hls.on(Hls.Events.ERROR, (event, d) => {
-                if (d.fatal) setOverlay(id, 'error', 'HLS error: ' + d.type);
-            });
-            hlsMap[id] = hls;
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = url;
+    if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+        const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+        hls.loadSource(url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
             video.play().catch(() => {});
             setOverlay(id, 'ok');
-        } else {
-            setOverlay(id, 'error', 'HLS tidak didukung browser ini');
-        }
-    } else {
-        // flv/rtmp - gunakan native video tag
+        });
+        hls.on(Hls.Events.ERROR, (event, d) => {
+            if (d.fatal) setOverlay(id, 'error', 'HLS error: ' + d.type);
+        });
+        playerMap[id] = hls;
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = url;
         video.play().catch(() => {});
         setOverlay(id, 'ok');
+    } else {
+        setOverlay(id, 'error', 'HLS tidak didukung browser ini');
     }
 }
 
 // ── Overlay state manager ─────────────────────────
 function setOverlay(id, state, msg) {
     stateMap[id] = state;
-    const vid   = document.getElementById('vid-' + id);
     const oLoad = document.getElementById('ov-load-' + id);
     const oErr  = document.getElementById('ov-err-'  + id);
     const oIdle = document.getElementById('ov-idle-' + id);
@@ -394,19 +467,40 @@ function setOverlay(id, state, msg) {
     if (state === 'loading') {
         oLoad.classList.remove('d-none');
     } else if (state === 'error') {
-        vid.style.display = 'none';
-        if (hlsMap[id]) { hlsMap[id].destroy(); delete hlsMap[id]; }
+        destroyPlayer(id);
         if (msg) document.getElementById('ov-errmsg-' + id).textContent = msg;
         oErr.classList.remove('d-none');
     } else if (state === 'idle') {
-        vid.style.display = 'none';
         oIdle.classList.remove('d-none');
     }
-    // 'ok' = all overlays hidden, video visible
+    // 'ok' = all overlays hidden, player visible
 }
 
 function reloadCell(id) {
     loadStream(id);
+}
+
+// ── Resize EZUIKit player to match container ──────
+function resizePlayer(id) {
+    const cache = streamCache[id];
+    if (!cache) return;
+    const container = document.getElementById('player-' + id);
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    if (rect.width < 10 || rect.height < 10) return;
+    // Destroy and reinit with fresh pixel dimensions
+    destroyPlayer(id);
+    if (cache.protocol === 'ezopen') {
+        playEzopen(id, cache.url, cache.accessToken, cache.apiUrl);
+    } else {
+        playHls(id, cache.url);
+    }
+}
+
+function resizeAllPlayers() {
+    setTimeout(() => {
+        CCTV_IDS.forEach(id => resizePlayer(id));
+    }, 350);
 }
 
 // ── Focus mode: klik satu kamera → perbesar ───────
@@ -445,6 +539,9 @@ function toggleFocus(id) {
 
     // Layout btns jadi inactive
     document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('active'));
+
+    // Resize player after grid transition
+    setTimeout(() => resizePlayer(id), 350);
 }
 
 function clearFocus() {
@@ -469,6 +566,9 @@ function clearFocus() {
     document.querySelectorAll('.layout-btn').forEach(b => {
         b.classList.toggle('active', b.dataset.cols === colsN);
     });
+
+    // Resize all players back to grid size
+    resizeAllPlayers();
 }
 
 // ── Layout picker ─────────────────────────────────
@@ -483,6 +583,8 @@ document.getElementById('layoutPicker').querySelectorAll('.layout-btn').forEach(
         btn.classList.add('active');
         // Simpan preference
         try { localStorage.setItem('lv_cols', n); } catch(e){}
+        // Resize all players after layout change
+        resizeAllPlayers();
     });
 });
 
@@ -510,7 +612,9 @@ document.getElementById('btnMuteAll').addEventListener('click', () => {
     globalMuted = !globalMuted;
     const icon = document.getElementById('muteIcon');
     icon.className = globalMuted ? 'bi bi-volume-mute' : 'bi bi-volume-up';
-    document.querySelectorAll('.lv-cell video').forEach(v => { v.muted = globalMuted; });
+    // Apply to any <video> elements inside player containers (HLS fallback)
+    document.querySelectorAll('.lv-player-container video').forEach(v => { v.muted = globalMuted; });
+    // For EZUIKit players, mute is not easily scriptable — user can use per-player controls
 });
 
 // ── Protocol change → reload all ─────────────────
@@ -554,4 +658,7 @@ document.addEventListener('keydown', e => {
         setTimeout(() => loadStream(id), i * 600);
     });
 })();
+
+// ── Resize players on window resize ──────────────
+window.addEventListener('resize', () => resizeAllPlayers());
 </script>

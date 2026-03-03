@@ -26,28 +26,35 @@ class EzvizModel
             $result = $response->json();
 
             if (isset($result['code']) && $result['code'] == '200') {
-                $tokenData = $result['data'];
-                $expiryTime = date('Y-m-d H:i:s', intval($tokenData['expireTime'] / 1000));
+                $tokenData  = $result['data'] ?? [];
+                $accessToken = $tokenData['accessToken'] ?? $tokenData['access_token'] ?? null;
+                $expireRaw   = $tokenData['expireTime'] ?? $tokenData['expire_time'] ?? 0;
+                // expireTime bisa berupa integer ms atau string — pastikan numerik
+                $expireMs    = is_numeric($expireRaw) ? intval($expireRaw) : 0;
+                $expiryTime  = $expireMs > 0
+                    ? date('Y-m-d H:i:s', intval($expireMs / 1000))
+                    : date('Y-m-d H:i:s', strtotime('+7 days'));
 
                 // Update token in database
                 DB::table('cv_ezviz_akun')->where('id_ezviz_akun', $akun->id_ezviz_akun)->update([
-                    'access_token' => $tokenData['accessToken'],
+                    'access_token' => $accessToken,
                     'token_expiry'  => $expiryTime,
                     'last_sync'     => date('Y-m-d H:i:s'),
                 ]);
 
                 return [
                     'success'      => true,
-                    'access_token' => $tokenData['accessToken'],
+                    'access_token' => $accessToken,
                     'expiry'       => $expiryTime,
                 ];
             }
 
             return [
                 'success' => false,
-                'message' => $result['msg'] ?? 'Failed to get token',
+                'message' => ($result['msg'] ?? $result['message'] ?? 'Failed to get token')
+                           . ' [code=' . ($result['code'] ?? '?') . ']',
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('EZVIZ getAccessToken error: ' . $e->getMessage());
             return ['success' => false, 'message' => $e->getMessage()];
         }
@@ -99,31 +106,49 @@ class EzvizModel
             return ['success' => false, 'message' => 'Cannot get valid EZVIZ token'];
         }
 
-        $akun = DB::table('cv_ezviz_akun')->find($cctv->id_ezviz_akun);
+        $akun = DB::table('cv_ezviz_akun')->where('id_ezviz_akun', $cctv->id_ezviz_akun)->first();
 
         try {
+            // quality: API EZVIZ pakai integer 1=HD, 2=SD
+            $qualityMap = ['hd' => 1, 'sd' => 2, '1' => 1, '2' => 2];
+            $quality    = $qualityMap[strtolower((string)($cctv->stream_type ?? 1))] ?? 1;
+            $channelNo  = intval($cctv->channel_no ?? 1);
+
+            // ── ezopen: construct URL directly — no API call needed ──────
+            if (strtolower($protocol) === 'ezopen') {
+                $suffix = ($quality === 1) ? '.hd.live' : '.live';
+                return [
+                    'success'      => true,
+                    'url'          => "ezopen://open.ezviz.com/{$cctv->device_serial}/{$channelNo}{$suffix}",
+                    'access_token' => $token,
+                    'api_url'      => $akun->api_url ?? 'https://isgpopen.ezvizlife.com',
+                ];
+            }
+
             $response = Http::timeout(15)->asForm()->post($akun->api_url . '/api/lapp/live/address/get', [
-                'accessToken' => $token,
+                'accessToken'  => $token,
                 'deviceSerial' => $cctv->device_serial,
-                'channelNo'    => $cctv->channel_no,
+                'channelNo'    => $channelNo,
                 'protocol'     => $this->mapProtocol($protocol),
-                'quality'      => $cctv->stream_type,
+                'quality'      => $quality,
             ]);
 
             $result = $response->json();
 
             if (isset($result['code']) && $result['code'] == '200') {
+                $expireRaw = $result['data']['expireTime'] ?? $result['data']['expire_time'] ?? 0;
+                $expireMs  = is_numeric($expireRaw) ? intval($expireRaw) : 0;
                 return [
-                    'success' => true,
-                    'url'     => $result['data']['url'] ?? null,
-                    'expireTime' => isset($result['data']['expireTime'])
-                        ? date('Y-m-d H:i:s', intval($result['data']['expireTime'] / 1000))
+                    'success'    => true,
+                    'url'        => $result['data']['url'] ?? null,
+                    'expireTime' => $expireMs > 0
+                        ? date('Y-m-d H:i:s', intval($expireMs / 1000))
                         : null,
                 ];
             }
 
-            return ['success' => false, 'message' => $result['msg'] ?? 'Failed to get stream URL'];
-        } catch (\Exception $e) {
+            return ['success' => false, 'message' => ($result['msg'] ?? $result['message'] ?? 'Failed to get stream URL') . ' [code=' . ($result['code'] ?? '?') . ']'];
+        } catch (\Throwable $e) {
             Log::error('EZVIZ getLiveStreamUrl error: ' . $e->getMessage());
             return ['success' => false, 'message' => $e->getMessage()];
         }
@@ -140,7 +165,7 @@ class EzvizModel
     public function getDeviceList($idEzvizAkun, $pageStart = 0, $pageSize = 50)
     {
         $token = $this->getValidToken($idEzvizAkun);
-        $akun = DB::table('cv_ezviz_akun')->find($idEzvizAkun);
+        $akun = DB::table('cv_ezviz_akun')->where('id_ezviz_akun', $idEzvizAkun)->first();
 
         if (!$token || !$akun) {
             return ['success' => false, 'message' => 'Invalid account or token', 'devices' => []];
@@ -164,7 +189,7 @@ class EzvizModel
             }
 
             return ['success' => false, 'message' => $result['msg'] ?? 'Failed', 'devices' => []];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('EZVIZ getDeviceList error: ' . $e->getMessage());
             return ['success' => false, 'message' => $e->getMessage(), 'devices' => []];
         }
@@ -180,7 +205,7 @@ class EzvizModel
     public function getDeviceInfo($idEzvizAkun, $deviceSerial)
     {
         $token = $this->getValidToken($idEzvizAkun);
-        $akun = DB::table('cv_ezviz_akun')->find($idEzvizAkun);
+        $akun = DB::table('cv_ezviz_akun')->where('id_ezviz_akun', $idEzvizAkun)->first();
 
         if (!$token || !$akun) {
             return ['success' => false, 'message' => 'Invalid account or token'];
@@ -199,7 +224,7 @@ class EzvizModel
             }
 
             return ['success' => false, 'message' => $result['msg'] ?? 'Failed'];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('EZVIZ getDeviceInfo error: ' . $e->getMessage());
             return ['success' => false, 'message' => $e->getMessage()];
         }
@@ -216,7 +241,7 @@ class EzvizModel
     public function captureImage($idEzvizAkun, $deviceSerial, $channelNo = 1)
     {
         $token = $this->getValidToken($idEzvizAkun);
-        $akun = DB::table('cv_ezviz_akun')->find($idEzvizAkun);
+        $akun = DB::table('cv_ezviz_akun')->where('id_ezviz_akun', $idEzvizAkun)->first();
 
         if (!$token || !$akun) {
             return ['success' => false, 'message' => 'Invalid account or token'];
@@ -236,7 +261,7 @@ class EzvizModel
             }
 
             return ['success' => false, 'message' => $result['msg'] ?? 'Failed'];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('EZVIZ captureImage error: ' . $e->getMessage());
             return ['success' => false, 'message' => $e->getMessage()];
         }
