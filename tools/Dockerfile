@@ -1,7 +1,7 @@
 # ============================================================
-# EZVIZ Flask Scraper — Docker Image
+# EZVIZ Flask Scraper — Docker Image (Production)
 # Base: python:3.10-slim + Google Chrome Stable
-# ChromeDriver di-install saat build (tidak butuh internet saat runtime)
+# Non-root user | modern apt-key via /etc/apt/keyrings/
 # ============================================================
 FROM python:3.10-slim
 
@@ -48,17 +48,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libxtst6 \
         lsb-release \
         xdg-utils \
-    && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" \
-        > /etc/apt/sources.list.d/google-chrome.list \
+    && install -d -m 0755 /etc/apt/keyrings \
+    && curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
+       | gpg --dearmor -o /etc/apt/keyrings/google-chrome.gpg \
+    && echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] \
+       http://dl.google.com/linux/chrome/deb/ stable main" \
+       > /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update && apt-get install -y --no-install-recommends google-chrome-stable \
     && rm -rf /var/lib/apt/lists/*
 
-# Install ChromeDriver versi yang sesuai dengan Chrome yang baru saja di-install
-# Menggunakan Chrome for Testing API (resmi dari Google)
+# Install ChromeDriver versi sesuai Chrome (Chrome for Testing API)
 RUN CHROME_VER=$(google-chrome --version | grep -oP '[\d.]+' | head -1) \
     && CHROME_MAJOR=$(echo $CHROME_VER | cut -d. -f1) \
-    && echo "Chrome version: $CHROME_VER (major: $CHROME_MAJOR)" \
+    && echo "Chrome: $CHROME_VER (major: $CHROME_MAJOR)" \
     && DRIVER_URL=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/latest-versions-per-milestone-with-downloads.json" \
         | jq -r ".milestones[\"$CHROME_MAJOR\"].downloads.chromedriver[] | select(.platform==\"linux64\") | .url") \
     && echo "ChromeDriver URL: $DRIVER_URL" \
@@ -71,26 +73,30 @@ RUN CHROME_VER=$(google-chrome --version | grep -oP '[\d.]+' | head -1) \
 
 WORKDIR /app
 
-# Install Python packages (webdriver-manager tetap ada sebagai fallback dev lokal)
+# Install Python packages
 RUN pip install --no-cache-dir \
         flask==2.3.3 \
         selenium==4.36.0 \
         webdriver-manager==4.0.2
 
-# Copy scraper
+# Copy scraper script
 COPY tools/ezviz_flask_scraper.py .
 
-# Konfigurasi environment
+# Non-root user
+RUN groupadd -r scraper && useradd -r -g scraper -s /sbin/nologin scraper \
+    && chown -R scraper:scraper /app
+
+USER scraper
+
 ENV FLASK_HOST=0.0.0.0
 ENV FLASK_PORT=5055
 ENV CHROME_BIN=/usr/bin/google-chrome
-# Path ChromeDriver sudah fix di container — tidak pakai webdriver-manager saat runtime
 ENV CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
 ENV WDM_OFFLINE=true
 
 EXPOSE 5055
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
     CMD curl -f http://localhost:5055/health || exit 1
 
 CMD ["python", "ezviz_flask_scraper.py"]

@@ -1,10 +1,38 @@
+# ── Git & IDE ──────────────────────────────────────────────
+.git
+.gitignore
+.gitattributes
+.vscode
+.idea
+
+# ── Deps (di-install saat build) ──────────────────────────
 vendor/
 node_modules/
+
+# ── Environment & Secrets ─────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Dev/Test ──────────────────────────────────────────────
+tests/
+phpunit.xml
+
+# ── Logs & Cache (pakai volume) ───────────────────────────
 storage/logs/
 storage/framework/cache/
 storage/framework/sessions/
 storage/framework/views/
-.git/
-.env
+bootstrap/cache/
 *.log
-public/assets/
+
+# ── Build artifacts ───────────────────────────────────────
+public/hot
+public/build
+
+# ── Tools dev only ────────────────────────────────────────
+tools/fix_*.php
+
+# ── Misc ──────────────────────────────────────────────────
+*.md
+!README.md
