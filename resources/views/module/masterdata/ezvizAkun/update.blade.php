@@ -132,7 +132,11 @@
                     <div class="mb-5">
                         <label class="form-label fw-semibold">API URL</label>
                         <input type="text" name="api_url" class="form-control"
-                            value="{{ old('api_url', $data['ezvizAkun']->api_url ?? 'https://open.ys7.com') }}" />
+                            value="{{ old('api_url', $data['ezvizAkun']->api_url ?? 'https://isgpopen.ezvizlife.com') }}" />
+                        <div class="form-text text-muted">
+                            Akun Internasional: https://isgpopen.ezvizlife.com &nbsp;|
+                            Akun China: https://open.ys7.com
+                        </div>
                     </div>
                     <div class="mb-5">
                         <label class="form-label fw-semibold">Status Token</label>
@@ -158,6 +162,9 @@
             </div>
 
             <div class="d-flex justify-content-end">
+                {{-- Hidden fields untuk token hasil scraping --}}
+                <input type="hidden" name="scraped_access_token" id="hidden_access_token" value="" />
+                <input type="hidden" name="scraped_token_expiry" id="hidden_token_expiry" value="" />
                 <a href="{{ url('/panel/masterData/daftarEzvizAkun') }}" class="btn btn-light me-3">Batal</a>
                 <button type="submit" class="btn btn-warning">
                     <i class="bi bi-check-lg me-2"></i>Update
@@ -213,8 +220,25 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    if (result.appKey) document.getElementById('field_app_key').value = result.appKey;
+                    if (result.appKey)    document.getElementById('field_app_key').value    = result.appKey;
                     if (result.appSecret) document.getElementById('field_app_secret').value = result.appSecret;
+
+                    // Simpan token ke hidden fields agar ikut di-POST saat Update
+                    if (result.accessToken) {
+                        document.getElementById('hidden_access_token').value = result.accessToken;
+                        document.getElementById('hidden_token_expiry').value  = result.tokenExpiry || '';
+                        document.getElementById('scrapeSuccess').innerHTML =
+                            '<i class="bi bi-check-circle-fill me-2"></i>' +
+                            '<strong>Berhasil!</strong> AppKey, Secret, dan Access Token telah diperbarui. ' +
+                            '<span class="text-muted">Berlaku hingga: ' + (result.tokenExpiry || '-') + '</span>';
+                    } else {
+                        document.getElementById('hidden_access_token').value = '';
+                        document.getElementById('hidden_token_expiry').value  = '';
+                        const tokenWarn = result.tokenError ? ' <small class="text-warning">[Token: ' + result.tokenError + ']</small>' : '';
+                        document.getElementById('scrapeSuccess').innerHTML =
+                            '<i class="bi bi-check-circle-fill me-2"></i>' +
+                            '<strong>Berhasil!</strong> AppKey & Secret diperbarui. Token akan diambil saat Simpan.' + tokenWarn;
+                    }
                     document.getElementById('scrapeSuccess').classList.remove('d-none');
                 } else {
                     document.getElementById('scrapeErrorMsg').textContent = result.message || 'Terjadi kesalahan.';

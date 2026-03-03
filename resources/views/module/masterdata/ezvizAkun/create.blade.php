@@ -137,9 +137,12 @@
                     </div>
                     <div class="mb-5">
                         <label class="form-label fw-semibold">API URL</label>
-                        <input type="text" name="api_url" class="form-control" placeholder="https://open.ys7.com"
-                            value="{{ old('api_url', 'https://open.ys7.com') }}" />
-                        <div class="form-text text-muted">Default: https://open.ys7.com</div>
+                        <input type="text" name="api_url" class="form-control" placeholder="https://isgpopen.ezvizlife.com"
+                            value="{{ old('api_url', 'https://isgpopen.ezvizlife.com') }}" />
+                        <div class="form-text text-muted">
+                            Akun <strong>Internasional</strong>: https://isgpopen.ezvizlife.com &nbsp;|
+                            Akun <strong>China</strong>: https://open.ys7.com
+                        </div>
                     </div>
                     <div class="mb-5">
                         <label class="form-label fw-semibold">Keterangan</label>

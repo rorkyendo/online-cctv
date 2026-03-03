@@ -28,26 +28,36 @@ app = Flask(__name__)
 scrape_lock = threading.Lock()  # satu request scrape sekaligus
 
 # Resolve ChromeDriver path SEKALI saat startup — hindari network request tiap scraping
-os.environ.setdefault("WDM_LOG", "0")          # matikan log webdriver_manager
-os.environ["WDM_OFFLINE"] = "true"             # gunakan cache lokal, jangan download ulang
+os.environ.setdefault("WDM_LOG", "0")   # matikan log webdriver_manager
 
-# Fallback: path chromedriver yang sudah di-cache WDM (update jika Chrome di-update)
-_HARDCODED_DRIVER = os.path.expanduser(
+# Prioritas 1: env var CHROMEDRIVER_PATH (diset oleh Docker di server)
+# Prioritas 2: WDM cache lokal (development Windows)
+# Prioritas 3: hardcoded cache WDM Windows
+_HARDCODED_DRIVER_WIN = os.path.expanduser(
     r"~\.wdm\drivers\chromedriver\win64\145.0.7632.117\chromedriver-win32\chromedriver.exe"
 )
 
-print("[INIT] Resolving ChromeDriver path (sekali saat startup)...")
-try:
-    _CHROMEDRIVER_PATH = ChromeDriverManager().install()
-    print(f"[INIT] ChromeDriver (WDM): {_CHROMEDRIVER_PATH}")
-except Exception as _e:
-    print(f"[INIT] WDM gagal ({_e}), coba fallback path...")
-    if os.path.isfile(_HARDCODED_DRIVER):
-        _CHROMEDRIVER_PATH = _HARDCODED_DRIVER
-        print(f"[INIT] ChromeDriver (fallback): {_CHROMEDRIVER_PATH}")
-    else:
-        _CHROMEDRIVER_PATH = None
-        print(f"[INIT] WARNING: ChromeDriver tidak ditemukan!")
+print("[INIT] Resolving ChromeDriver path...")
+_env_driver = os.environ.get("CHROMEDRIVER_PATH", "").strip()
+
+if _env_driver and os.path.isfile(_env_driver):
+    # Mode Docker/server — gunakan path dari env var langsung
+    _CHROMEDRIVER_PATH = _env_driver
+    print(f"[INIT] ChromeDriver (env): {_CHROMEDRIVER_PATH}")
+else:
+    # Mode development — pakai WDM dengan cache offline
+    os.environ["WDM_OFFLINE"] = "true"
+    try:
+        _CHROMEDRIVER_PATH = ChromeDriverManager().install()
+        print(f"[INIT] ChromeDriver (WDM cache): {_CHROMEDRIVER_PATH}")
+    except Exception as _e:
+        print(f"[INIT] WDM gagal ({_e}), coba hardcoded path...")
+        if os.path.isfile(_HARDCODED_DRIVER_WIN):
+            _CHROMEDRIVER_PATH = _HARDCODED_DRIVER_WIN
+            print(f"[INIT] ChromeDriver (hardcoded): {_CHROMEDRIVER_PATH}")
+        else:
+            _CHROMEDRIVER_PATH = None
+            print("[INIT] WARNING: ChromeDriver tidak ditemukan!")
 
 
 # ============================================================
@@ -301,10 +311,50 @@ def scrape_ezviz(email: str, password: str) -> dict:
             pass  # Secret tetap None
 
         # --------------------------------------------------
+        # STEP 6.5: Klik "Check" KEDUA untuk reveal AccessToken
+        # Setelah Check pertama (AppSecret) diklik, Check berikutnya adalah AccessToken
+        # --------------------------------------------------
+        access_token = None
+        try:
+            # Re-fetch tombol Check yang masih ada (pertama sudah terganti setelah AppSecret di-reveal)
+            check_buttons_2 = driver.find_elements(
+                By.XPATH,
+                "//*[normalize-space(text())='Check']"
+            )
+            if check_buttons_2:
+                # Kumpulkan semua string panjang yang sudah ada
+                body_pre_token = driver.find_element(By.TAG_NAME, "body").text
+                existing_long = set(re.findall(r'[A-Za-z0-9_\-+/=.]{30,}', body_pre_token))
+
+                driver.execute_script("arguments[0].click();", check_buttons_2[0])
+
+                deadline = time.time() + 8
+                while time.time() < deadline:
+                    try:
+                        body_post_token = driver.find_element(By.TAG_NAME, "body").text
+                        new_long = set(re.findall(r'[A-Za-z0-9_\-+/=.]{30,}', body_post_token)) - existing_long
+                        # Filter: bukan pure hex-32 (itu AppKey/Secret), bukan URL
+                        candidates = [
+                            s for s in new_long
+                            if not re.match(r'^[a-f0-9]{32}$', s, re.I)
+                            and 'http' not in s.lower()
+                            and len(s) >= 30
+                        ]
+                        if candidates:
+                            # Ambil kandidat terpanjang
+                            access_token = max(candidates, key=len)
+                            print(f"[SCRAPER] AccessToken ditemukan ({len(access_token)} chars)")
+                            break
+                    except Exception:
+                        pass
+                    time.sleep(0.5)
+        except Exception as _e_tok:
+            print(f"[SCRAPER] Gagal reveal AccessToken: {_e_tok}")
+
+        # --------------------------------------------------
         # STEP 7: Scrape AccessToken expiry date
         # --------------------------------------------------
         token_expiry = None
-        access_token = None
         try:
             body_full = driver.find_element(By.TAG_NAME, "body").text
             m_exp = re.search(

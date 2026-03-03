@@ -295,7 +295,7 @@ class MasterDataController extends Controller
                 'password_console' => $request->password_console ? encrypt($request->password_console) : null,
                 'app_key' => $request->app_key ?: null,
                 'app_secret' => $request->app_secret ?: null,
-                'api_url' => $request->api_url ?? 'https://open.ys7.com',
+                'api_url' => $request->api_url ?? 'https://isgpopen.ezvizlife.com',
                 'status' => $request->status ?? 'aktif',
                 'created_time' => date('Y-m-d H:i:s'),
             ]);
@@ -372,38 +372,40 @@ class MasterDataController extends Controller
             if ($result['success'] ?? false) {
                 LogHelper::log('Scrape AppKey Ezviz', 'MasterData', 'Scrape AppKey untuk email: ' . $email);
 
-                // Langsung ambil Access Token via API EZVIZ menggunakan AppKey+AppSecret hasil scraping
-                $appKey    = $result['appKey'] ?? null;
-                $appSecret = $result['appSecret'] ?? null;
+                // Jika scraper sudah berhasil mengambil token langsung dari portal, gunakan itu
+                // Tidak perlu call API EZVIZ (menghindari masalah endpoint region/appKey tidak dikenal)
+                if (!($result['accessToken'] ?? null)) {
+                    // Token tidak berhasil di-scrape — coba via API sebagai fallback
+                    $appKey    = $result['appKey'] ?? null;
+                    $appSecret = $result['appSecret'] ?? null;
 
-                // Gunakan api_url dari akun yang ada di DB (jika ada), fallback ke default
-                $existingAkun = DB::table('cv_ezviz_akun')
-                    ->where('email_terdaftar', $email)
-                    ->first();
-                $apiUrl = $existingAkun?->api_url ?: 'https://open.ys7.com';
+                    // Gunakan api_url dari akun yang ada di DB (jika ada), fallback ke default
+                    $existingAkun = DB::table('cv_ezviz_akun')
+                        ->where('email_terdaftar', $email)
+                        ->first();
+                    $apiUrl = $existingAkun?->api_url ?: 'https://isgpopen.ezvizlife.com';
 
-                if ($appKey && $appSecret) {
-                    try {
-                        $tokenResp = Http::timeout(15)->asForm()->post($apiUrl . '/api/lapp/token/get', [
-                            'appKey'    => $appKey,
-                            'appSecret' => $appSecret,
-                        ]);
-                        $tokenData = $tokenResp->json();
-                        if (isset($tokenData['code']) && $tokenData['code'] == '200') {
-                            $data = $tokenData['data'] ?? [];
-                            // API EZVIZ bisa pakai 'accessToken' atau 'access_token' tergantung server
-                            $token = $data['accessToken'] ?? $data['access_token'] ?? $data['token'] ?? null;
-                            $expireMs = $data['expireTime'] ?? $data['expire_time'] ?? 0;
-                            $result['accessToken'] = $token;
-                            $result['tokenExpiry']  = $expireMs ? date('Y-m-d H:i:s', intval($expireMs / 1000)) : null;
-                        } else {
-                            $result['tokenError'] = ($tokenData['msg'] ?? $tokenData['message'] ?? 'Gagal ambil token dari API EZVIZ')
-                                . ' [code=' . ($tokenData['code'] ?? '?') . ']';
+                    if ($appKey && $appSecret) {
+                        try {
+                            $tokenResp = Http::timeout(15)->asForm()->post($apiUrl . '/api/lapp/token/get', [
+                                'appKey'    => $appKey,
+                                'appSecret' => $appSecret,
+                            ]);
+                            $tokenData = $tokenResp->json();
+                            if (isset($tokenData['code']) && $tokenData['code'] == '200') {
+                                $data = $tokenData['data'] ?? [];
+                                $token = $data['accessToken'] ?? $data['access_token'] ?? $data['token'] ?? null;
+                                $expireMs = $data['expireTime'] ?? $data['expire_time'] ?? 0;
+                                $result['accessToken'] = $token;
+                                $result['tokenExpiry']  = $expireMs ? date('Y-m-d H:i:s', intval($expireMs / 1000)) : null;
+                            } else {
+                                $result['tokenError'] = ($tokenData['msg'] ?? $tokenData['message'] ?? 'Gagal ambil token dari API EZVIZ')
+                                    . ' [code=' . ($tokenData['code'] ?? '?') . ']';
+                            }
+                            $result['_tokenApiRaw'] = $tokenData;
+                        } catch (\Exception $te) {
+                            $result['tokenError'] = 'Error API token: ' . $te->getMessage();
                         }
-                        // Debug: sertakan raw response agar mudah diagnosis
-                        $result['_tokenApiRaw'] = $tokenData;
-                    } catch (\Exception $te) {
-                        $result['tokenError'] = 'Error API token: ' . $te->getMessage();
                     }
                 }
             }
@@ -429,7 +431,7 @@ class MasterDataController extends Controller
                 'deskripsi' => $request->deskripsi,
                 'email_terdaftar' => $request->email_terdaftar,
                 'app_key' => $request->app_key ?: null,
-                'api_url' => $request->api_url ?? 'https://open.ys7.com',
+                'api_url' => $request->api_url ?? 'https://isgpopen.ezvizlife.com',
                 'status' => $request->status ?? 'aktif',
             ];
 
@@ -440,24 +442,37 @@ class MasterDataController extends Controller
 
             if (!empty($request->app_secret)) {
                 $updateData['app_secret'] = $request->app_secret;
-                // Invalidate token since secret changed
+            }
+
+            // Jika ada token yang di-scrape langsung dari portal, simpan sekarang
+            $scrapedToken  = trim($request->input('scraped_access_token', ''));
+            $scrapedExpiry = trim($request->input('scraped_token_expiry', ''));
+            if ($scrapedToken) {
+                $updateData['access_token'] = $scrapedToken;
+                $updateData['token_expiry']  = $scrapedExpiry ?: null;
+            } elseif (!empty($request->app_secret)) {
+                // Secret baru tapi tidak ada scraped token — invalidate token lama
                 $updateData['access_token'] = null;
-                $updateData['token_expiry'] = null;
+                $updateData['token_expiry']  = null;
             }
 
             GeneralModel::updateById('cv_ezviz_akun', $updateData, 'id_ezviz_akun', $param1);
             LogHelper::log('Update Akun Ezviz', 'MasterData', 'Update akun ID: ' . $param1);
 
-            // Coba ambil token jika app_key & app_secret tersedia
-            $akun = GeneralModel::getByIdGeneral('cv_ezviz_akun', 'first', 'id_ezviz_akun', $param1);
-            if ($akun && $akun->app_key && $akun->app_secret) {
-                $ezviz = new EzvizModel();
-                $tokenResult = $ezviz->getAccessToken($akun);
-                $msg = $tokenResult['success']
-                    ? 'Akun Ezviz berhasil diupdate dan access token berhasil diperbarui!'
-                    : 'Akun Ezviz diupdate, namun gagal mendapatkan access token: ' . ($tokenResult['message'] ?? 'unknown error');
+            // Coba ambil token via API hanya jika belum ada token dari scraping
+            if (!$scrapedToken) {
+                $akun = GeneralModel::getByIdGeneral('cv_ezviz_akun', 'first', 'id_ezviz_akun', $param1);
+                if ($akun && $akun->app_key && $akun->app_secret) {
+                    $ezviz = new EzvizModel();
+                    $tokenResult = $ezviz->getAccessToken($akun);
+                    $msg = $tokenResult['success']
+                        ? 'Akun Ezviz berhasil diupdate dan access token berhasil diperbarui!'
+                        : 'Akun Ezviz diupdate. Token: ' . ($tokenResult['message'] ?? 'gagal diperbarui');
+                } else {
+                    $msg = 'Akun Ezviz berhasil diupdate!';
+                }
             } else {
-                $msg = 'Akun Ezviz berhasil diupdate!';
+                $msg = 'Akun Ezviz berhasil diupdate dengan access token baru!';
             }
 
             session()->flash('success', $msg);
