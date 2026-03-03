@@ -284,4 +284,58 @@ class EzvizModel
         ];
         return $map[strtolower($protocol)] ?? 2;
     }
+
+    /**
+     * Add a physical device to an EZVIZ Open Platform account.
+     * Endpoint: POST {api_url}/api/lapp/device/add
+     *
+     * @param int    $idEzvizAkun
+     * @param string $deviceSerial  9-character device serial (from sticker)
+     * @param string $deviceCode    Verification/validation code (from sticker)
+     * @return array
+     */
+    public function addDeviceToAccount($idEzvizAkun, $deviceSerial, $deviceCode)
+    {
+        $token = $this->getValidToken($idEzvizAkun);
+        $akun  = DB::table('cv_ezviz_akun')->where('id_ezviz_akun', $idEzvizAkun)->first();
+
+        if (!$token || !$akun) {
+            return ['success' => false, 'message' => 'Token atau akun tidak valid'];
+        }
+
+        try {
+            $response = Http::timeout(15)->asForm()->post($akun->api_url . '/api/lapp/device/add', [
+                'accessToken'  => $token,
+                'deviceSerial' => strtoupper(trim($deviceSerial)),
+                'deviceCode'   => trim($deviceCode),
+            ]);
+
+            $result = $response->json();
+
+            if (isset($result['code']) && $result['code'] == '200') {
+                return [
+                    'success' => true,
+                    'message' => 'Device berhasil ditambahkan ke akun EZVIZ',
+                    'data'    => $result['data'] ?? [],
+                ];
+            }
+
+            // Map known EZVIZ error codes to Indonesian messages
+            $codeMsg = [
+                '10002' => 'Serial number tidak ditemukan. Periksa kembali nomor serial.',
+                '10003' => 'Verification code salah.',
+                '10004' => 'Device sudah terdaftar di akun lain.',
+                '10005' => 'Device sudah terdaftar di akun ini.',
+                '20002' => 'appKey tidak valid.',
+            ];
+            $code    = $result['code'] ?? '?';
+            $message = $codeMsg[$code]
+                ?? (($result['msg'] ?? $result['message'] ?? 'Gagal menambahkan device') . ' [code=' . $code . ']');
+
+            return ['success' => false, 'message' => $message];
+        } catch (\Throwable $e) {
+            Log::error('EZVIZ addDeviceToAccount error: ' . $e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
 }

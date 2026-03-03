@@ -60,6 +60,11 @@
                             title="Lihat &amp; Import Device dari Portal">
                         <i class="bi bi-camera-video"></i>
                     </button>
+                    <button class="btn btn-sm btn-light-primary"
+                            onclick="openAddDeviceModal({{ $akun->id_ezviz_akun }}, '{{ $akun->nama_akun }}')"
+                            title="Tambah Device Baru ke Akun EZVIZ ini">
+                        <i class="bi bi-plus-circle"></i>
+                    </button>
                     <button class="btn btn-sm btn-light-info"
                             onclick="refreshToken({{ $akun->id_ezviz_akun }}, this)" title="Refresh Token">
                         <i class="bi bi-arrow-repeat"></i>
@@ -228,6 +233,58 @@
                 </button>
                 <button type="button" class="btn btn-success" id="btnDoImport" onclick="doImport()">
                     <i class="bi bi-plus-circle me-2"></i>Tambahkan ke Sistem
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- =========================================================== --}}
+{{-- MODAL: Tambah Device ke Akun EZVIZ                        --}}
+{{-- =========================================================== --}}
+<div class="modal fade" id="modalAddDevice" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle me-2 text-primary"></i>
+                    Tambah Device ke Akun: <span id="addDevAkunNama" class="text-primary"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="addDevAkunId">
+
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Masukkan <strong>Serial Number</strong> dan <strong>Verification Code</strong> yang tertera
+                    pada <strong>stiker di bagian bawah / belakang kamera</strong>.
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label required fw-semibold">Device Serial Number</label>
+                    <input type="text" id="addDevSerial" class="form-control font-monospace text-uppercase"
+                           placeholder="Contoh: BG8997978" maxlength="20"
+                           oninput="this.value = this.value.toUpperCase()">
+                    <div class="form-text text-muted">9 karakter, contoh: BG8997978 atau K89195808</div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label required fw-semibold">Device Verification Code</label>
+                    <input type="text" id="addDevCode" class="form-control font-monospace"
+                           placeholder="Contoh: ABCD12" maxlength="20">
+                    <div class="form-text text-muted">
+                        Biasanya 6 karakter, tertera di stiker kamera dengan label
+                        <em>"Verification Code"</em> atau <em>"Code"</em>.
+                    </div>
+                </div>
+
+                <div id="addDevResult" class="mt-4 d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" id="btnDoAddDevice" onclick="doAddDevice()">
+                    <i class="bi bi-plus-circle me-2"></i>Tambahkan
                 </button>
             </div>
         </div>
@@ -411,6 +468,60 @@ function doImport() {
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-plus-circle me-2"></i>Tambahkan ke Sistem';
         alert('Error: ' + e.message);
+    });
+// ── Tambah Device ke EZVIZ ───────────────────────────────────
+function openAddDeviceModal(akunId, akunNama) {
+    document.getElementById('addDevAkunId').value        = akunId;
+    document.getElementById('addDevAkunNama').textContent = akunNama;
+    document.getElementById('addDevSerial').value        = '';
+    document.getElementById('addDevCode').value          = '';
+    document.getElementById('addDevResult').classList.add('d-none');
+    document.getElementById('addDevResult').className    = 'mt-4 d-none';
+    new bootstrap.Modal(document.getElementById('modalAddDevice')).show();
+}
+
+function doAddDevice() {
+    const serial = document.getElementById('addDevSerial').value.trim().toUpperCase();
+    const code   = document.getElementById('addDevCode').value.trim();
+    const akunId = document.getElementById('addDevAkunId').value;
+    const result = document.getElementById('addDevResult');
+
+    if (!serial) { alert('Serial number wajib diisi.'); return; }
+    if (!code)   { alert('Verification code wajib diisi.'); return; }
+
+    const btn = document.getElementById('btnDoAddDevice');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menghubungi EZVIZ...';
+    result.classList.add('d-none');
+
+    fetch('{{ url("/panel/masterData/addDeviceToEzviz") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}'},
+        body: JSON.stringify({ id_ezviz_akun: akunId, device_serial: serial, device_code: code })
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-plus-circle me-2"></i>Tambahkan';
+        result.classList.remove('d-none');
+        if (data.success) {
+            result.className = 'mt-4 alert alert-success';
+            result.innerHTML = '<i class="bi bi-check-circle me-2"></i><strong>Berhasil!</strong> ' +
+                'Device <code>' + serial + '</code> berhasil ditambahkan ke akun EZVIZ. ' +
+                'Kini Anda bisa import device tersebut ke sistem dengan tombol <i class="bi bi-camera-video"></i>.';
+            document.getElementById('addDevSerial').value = '';
+            document.getElementById('addDevCode').value   = '';
+        } else {
+            result.className = 'mt-4 alert alert-danger';
+            result.innerHTML = '<i class="bi bi-exclamation-circle me-2"></i>' + (data.message || 'Terjadi kesalahan.');
+        }
+    })
+    .catch(e => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-plus-circle me-2"></i>Tambahkan';
+        result.classList.remove('d-none');
+        result.className = 'mt-4 alert alert-danger';
+        result.innerHTML = '<i class="bi bi-exclamation-circle me-2"></i>Koneksi error: ' + e.message;
     });
 }
 </script>

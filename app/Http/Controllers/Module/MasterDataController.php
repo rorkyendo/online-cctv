@@ -582,4 +582,37 @@ class MasterDataController extends Controller
             return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }
     }
+
+    // ===========================================================
+    // EZVIZ - Tambah device ke akun EZVIZ Open Platform
+    // ===========================================================
+    public function addDeviceToEzviz(Request $request)
+    {
+        $validator = validator()->make($request->all(), [
+            'id_ezviz_akun' => 'required|integer',
+            'device_serial' => 'required|string|min:6|max:20',
+            'device_code'   => 'required|string|min:1|max:20',
+        ], [
+            'id_ezviz_akun.required' => 'Akun EZVIZ wajib dipilih.',
+            'device_serial.required' => 'Serial number wajib diisi.',
+            'device_code.required'   => 'Verification code wajib diisi.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+        }
+
+        $result = $this->ezviz->addDeviceToAccount(
+            $request->id_ezviz_akun,
+            $request->device_serial,
+            $request->device_code
+        );
+
+        if ($result['success']) {
+            LogHelper::log('Add Device ke EZVIZ', 'MasterData',
+                'Tambah device serial: ' . $request->device_serial . ' ke akun ID: ' . $request->id_ezviz_akun);
+        }
+
+        return response()->json($result);
+    }
 }

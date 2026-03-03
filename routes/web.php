@@ -90,6 +90,7 @@ Route::middleware(['auth'])->prefix('panel')->group(function () {
             Route::get('/hapusEzvizAkun/{param1}', [MasterDataController::class, 'hapusEzvizAkun'])->name('hapusEzvizAkun');
             Route::post('/scrapeEzvizAppKey', [MasterDataController::class, 'scrapeEzvizAppKey'])->name('scrapeEzvizAppKey');
             Route::post('/scrapeEzvizDevices', [MasterDataController::class, 'scrapeEzvizDevices'])->name('scrapeEzvizDevices');
+            Route::post('/addDeviceToEzviz', [MasterDataController::class, 'addDeviceToEzviz'])->name('addDeviceToEzviz');
         });
 
         // Pengaturan
