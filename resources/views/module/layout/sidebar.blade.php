@@ -104,6 +104,12 @@
 
     <!--begin::Footer-->
     <div class="app-sidebar-footer flex-column-auto pt-2 pb-6 px-6" id="kt_app_sidebar_footer">
+        <a href="{{ url('/panel/panduan') }}"
+           class="btn btn-flex flex-center btn-custom btn-light-info overflow-hidden text-nowrap px-0 h-35px w-100 mb-2">
+            <span class="btn-label fs-7">
+                <i class="bi bi-book-half me-2"></i>Panduan Kamera
+            </span>
+        </a>
         <a href="{{ url('/panel/profile') }}"
            class="btn btn-flex flex-center btn-custom btn-secondary overflow-hidden text-nowrap px-0 h-40px w-100 mb-2">
             <span class="btn-label">

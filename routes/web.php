@@ -32,6 +32,9 @@ Route::middleware(['auth'])->prefix('panel')->group(function () {
     Route::post('/updateProfile', [ProfileController::class, 'updateProfile'])->name('updateProfile');
     Route::post('/updatePassword', [ProfileController::class, 'updatePassword'])->name('updatePassword');
 
+    // Panduan
+    Route::get('/panduan', [ProfileController::class, 'userGuide'])->name('panduan');
+
     // Protected routes (require module access)
     Route::middleware(['checkAccess'])->group(function () {
 
