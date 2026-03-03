@@ -8,7 +8,9 @@ use App\Models\GeneralModel;
 use App\Models\EzvizModel;
 use App\Helpers\LogHelper;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Yajra\DataTables\DataTables;
+use Illuminate\Support\Facades\Http;
 
 class MasterDataController extends Controller
 {
@@ -22,8 +24,8 @@ class MasterDataController extends Controller
                 ->make(true);
         }
 
-        $data            = $this->getCommonData();
-        $data['title']   = 'Daftar Pengguna';
+        $data = $this->getCommonData();
+        $data['title'] = 'Daftar Pengguna';
         $data['content'] = 'module.masterdata.pengguna.data';
         $data['penggunaList'] = DB::table('cv_pengguna')
             ->select('id_pengguna', 'nama_lengkap', 'username', 'email', 'hak_akses', 'status', 'last_login', 'created_time')
@@ -37,14 +39,14 @@ class MasterDataController extends Controller
         if ($param1 === 'save') {
             $validator = validator()->make($request->all(), [
                 'nama_lengkap' => 'required|max:255',
-                'username'     => 'required|max:100|unique:cv_pengguna,username',
-                'password'     => 'required|min:6',
-                'hak_akses'    => 'required',
-                'email'        => 'nullable|email|unique:cv_pengguna,email',
+                'username' => 'required|max:100|unique:cv_pengguna,username',
+                'password' => 'required|min:6',
+                'hak_akses' => 'required',
+                'email' => 'nullable|email|unique:cv_pengguna,email',
             ], [
-                'username.unique'  => 'Username sudah digunakan!',
-                'email.unique'     => 'Email sudah digunakan!',
-                'password.min'     => 'Password minimal 6 karakter!',
+                'username.unique' => 'Username sudah digunakan!',
+                'email.unique' => 'Email sudah digunakan!',
+                'password.min' => 'Password minimal 6 karakter!',
             ]);
 
             if ($validator->fails()) {
@@ -54,12 +56,12 @@ class MasterDataController extends Controller
 
             GeneralModel::create('cv_pengguna', [
                 'nama_lengkap' => $request->nama_lengkap,
-                'username'     => $request->username,
-                'password'     => sha1($request->password),
-                'email'        => $request->email,
-                'no_telp'      => $request->no_telp,
-                'hak_akses'    => $request->hak_akses,
-                'status'       => $request->status ?? 'actived',
+                'username' => $request->username,
+                'password' => sha1($request->password),
+                'email' => $request->email,
+                'no_telp' => $request->no_telp,
+                'hak_akses' => $request->hak_akses,
+                'status' => $request->status ?? 'actived',
                 'created_time' => date('Y-m-d H:i:s'),
             ]);
 
@@ -68,8 +70,8 @@ class MasterDataController extends Controller
             return redirect()->to('/panel/masterData/daftarPengguna');
         }
 
-        $data            = $this->getCommonData();
-        $data['title']   = 'Tambah Pengguna';
+        $data = $this->getCommonData();
+        $data['title'] = 'Tambah Pengguna';
         $data['content'] = 'module.masterdata.pengguna.create';
         $data['hakAksesList'] = DB::table('cv_hak_akses')->orderBy('nama_hak_akses')->get();
         return view('module.content', ['data' => $data]);
@@ -80,10 +82,10 @@ class MasterDataController extends Controller
         if ($param2 === 'save') {
             $updateData = [
                 'nama_lengkap' => $request->nama_lengkap,
-                'email'        => $request->email,
-                'no_telp'      => $request->no_telp,
-                'hak_akses'    => $request->hak_akses,
-                'status'       => $request->status ?? 'actived',
+                'email' => $request->email,
+                'no_telp' => $request->no_telp,
+                'hak_akses' => $request->hak_akses,
+                'status' => $request->status ?? 'actived',
             ];
 
             if (!empty($request->password)) {
@@ -96,10 +98,10 @@ class MasterDataController extends Controller
             return redirect()->to('/panel/masterData/daftarPengguna');
         }
 
-        $data              = $this->getCommonData();
-        $data['title']     = 'Update Pengguna';
-        $data['content']   = 'module.masterdata.pengguna.update';
-        $data['pengguna']  = GeneralModel::getByIdGeneral('cv_pengguna', 'first', 'id_pengguna', $param1);
+        $data = $this->getCommonData();
+        $data['title'] = 'Update Pengguna';
+        $data['content'] = 'module.masterdata.pengguna.update';
+        $data['pengguna'] = GeneralModel::getByIdGeneral('cv_pengguna', 'first', 'id_pengguna', $param1);
         $data['hakAksesList'] = DB::table('cv_hak_akses')->orderBy('nama_hak_akses')->get();
 
         if (!$data['pengguna']) {
@@ -132,13 +134,13 @@ class MasterDataController extends Controller
             return DataTables::of(DB::table('cv_hak_akses'))->make(true);
         }
 
-        $data            = $this->getCommonData();
-        $data['title']   = 'Daftar Hak Akses';
+        $data = $this->getCommonData();
+        $data['title'] = 'Daftar Hak Akses';
         $data['content'] = 'module.masterdata.hakAkses.data';
-        $data['hakAksesList']   = DB::table('cv_hak_akses')->orderBy('nama_hak_akses')->get();
-        $data['modulList']      = DB::table('cv_modul')->orderBy('class_parent_modul')->orderBy('urutan')->get();
+        $data['hakAksesList'] = DB::table('cv_hak_akses')->orderBy('nama_hak_akses')->get();
+        $data['modulList'] = DB::table('cv_modul')->orderBy('class_parent_modul')->orderBy('urutan')->get();
         $data['parentModulList'] = DB::table('cv_parent_modul')->orderBy('urutan')->get();
-        $data['grupList']       = DB::table('cv_lokasi_group')->where('status', 'aktif')->orderBy('nama_group')->get();
+        $data['grupList'] = DB::table('cv_lokasi_group')->where('status', 'aktif')->orderBy('nama_group')->get();
         return view('module.content', ['data' => $data]);
     }
 
@@ -155,24 +157,24 @@ class MasterDataController extends Controller
             }
 
             // Build modul_akses JSON
-            $selectedModul  = $request->input('modul', []);
-            $modul_akses    = json_encode(['modul' => $selectedModul]);
+            $selectedModul = $request->input('modul', []);
+            $modul_akses = json_encode(['modul' => $selectedModul]);
 
             // Build parent_modul_akses JSON
             $selectedParent = $request->input('parent_modul', []);
-            $parent_akses   = json_encode(['parent_modul' => $selectedParent]);
+            $parent_akses = json_encode(['parent_modul' => $selectedParent]);
 
             // Build cctv_group_akses JSON
-            $selectedGroups  = $request->input('cctv_group', []);
+            $selectedGroups = $request->input('cctv_group', []);
             $cctv_group_akses = empty($selectedGroups) ? null : json_encode(array_map('intval', $selectedGroups));
 
             GeneralModel::create('cv_hak_akses', [
-                'nama_hak_akses'   => $request->nama_hak_akses,
-                'deskripsi'        => $request->deskripsi,
-                'modul_akses'      => $modul_akses,
+                'nama_hak_akses' => $request->nama_hak_akses,
+                'deskripsi' => $request->deskripsi,
+                'modul_akses' => $modul_akses,
                 'parent_modul_akses' => $parent_akses,
                 'cctv_group_akses' => $cctv_group_akses,
-                'created_time'     => date('Y-m-d H:i:s'),
+                'created_time' => date('Y-m-d H:i:s'),
             ]);
 
             LogHelper::log('Tambah Hak Akses', 'MasterData', 'Tambah hak akses: ' . $request->nama_hak_akses);
@@ -180,28 +182,28 @@ class MasterDataController extends Controller
             return redirect()->to('/panel/masterData/daftarHakAkses');
         }
 
-        $data                   = $this->getCommonData();
-        $data['title']          = 'Tambah Hak Akses';
-        $data['content']        = 'module.masterdata.hakAkses.create';
-        $data['modulList']      = DB::table('cv_modul')->orderBy('class_parent_modul')->orderBy('urutan')->get();
+        $data = $this->getCommonData();
+        $data['title'] = 'Tambah Hak Akses';
+        $data['content'] = 'module.masterdata.hakAkses.create';
+        $data['modulList'] = DB::table('cv_modul')->orderBy('class_parent_modul')->orderBy('urutan')->get();
         $data['parentModulList'] = DB::table('cv_parent_modul')->orderBy('urutan')->get();
-        $data['grupList']       = DB::table('cv_lokasi_group')->where('status', 'aktif')->orderBy('nama_group')->get();
+        $data['grupList'] = DB::table('cv_lokasi_group')->where('status', 'aktif')->orderBy('nama_group')->get();
         return view('module.content', ['data' => $data]);
     }
 
     public function updateHakAkses(Request $request, $param1 = '', $param2 = '')
     {
         if ($param2 === 'save') {
-            $selectedModul    = $request->input('modul', []);
-            $selectedParent   = $request->input('parent_modul', []);
-            $selectedGroups   = $request->input('cctv_group', []);
+            $selectedModul = $request->input('modul', []);
+            $selectedParent = $request->input('parent_modul', []);
+            $selectedGroups = $request->input('cctv_group', []);
             $cctv_group_akses = empty($selectedGroups) ? null : json_encode(array_map('intval', $selectedGroups));
 
             GeneralModel::updateById('cv_hak_akses', [
-                'deskripsi'          => $request->deskripsi,
-                'modul_akses'        => json_encode(['modul' => $selectedModul]),
+                'deskripsi' => $request->deskripsi,
+                'modul_akses' => json_encode(['modul' => $selectedModul]),
                 'parent_modul_akses' => json_encode(['parent_modul' => $selectedParent]),
-                'cctv_group_akses'   => $cctv_group_akses,
+                'cctv_group_akses' => $cctv_group_akses,
             ], 'id_hak_akses', $param1);
 
             LogHelper::log('Update Hak Akses', 'MasterData', 'Update hak akses ID: ' . $param1);
@@ -209,13 +211,13 @@ class MasterDataController extends Controller
             return redirect()->to('/panel/masterData/daftarHakAkses');
         }
 
-        $data                   = $this->getCommonData();
-        $data['title']          = 'Update Hak Akses';
-        $data['content']        = 'module.masterdata.hakAkses.update';
-        $data['hakAkses']       = GeneralModel::getByIdGeneral('cv_hak_akses', 'first', 'id_hak_akses', $param1);
-        $data['modulList']      = DB::table('cv_modul')->orderBy('class_parent_modul')->orderBy('urutan')->get();
+        $data = $this->getCommonData();
+        $data['title'] = 'Update Hak Akses';
+        $data['content'] = 'module.masterdata.hakAkses.update';
+        $data['hakAkses'] = GeneralModel::getByIdGeneral('cv_hak_akses', 'first', 'id_hak_akses', $param1);
+        $data['modulList'] = DB::table('cv_modul')->orderBy('class_parent_modul')->orderBy('urutan')->get();
         $data['parentModulList'] = DB::table('cv_parent_modul')->orderBy('urutan')->get();
-        $data['grupList']       = DB::table('cv_lokasi_group')->where('status', 'aktif')->orderBy('nama_group')->get();
+        $data['grupList'] = DB::table('cv_lokasi_group')->where('status', 'aktif')->orderBy('nama_group')->get();
 
         if (!$data['hakAkses']) {
             session()->flash('error', 'Hak akses tidak ditemukan!');
@@ -226,7 +228,8 @@ class MasterDataController extends Controller
 
     public function hapusHakAkses(Request $request, $param1)
     {
-        $inUse = DB::table('cv_pengguna')->where('hak_akses',
+        $inUse = DB::table('cv_pengguna')->where(
+            'hak_akses',
             DB::table('cv_hak_akses')->where('id_hak_akses', $param1)->value('nama_hak_akses')
         )->count();
 
@@ -247,17 +250,26 @@ class MasterDataController extends Controller
     public function daftarEzvizAkun(Request $request)
     {
         if ($request->ajax()) {
-            return DataTables::of(DB::table('cv_ezviz_akun')
-                ->select('id_ezviz_akun', 'nama_akun', 'email_terdaftar', 'app_key', 'api_url', 'status', 'last_sync', 'token_expiry', 'created_time')
+            return DataTables::of(
+                DB::table('cv_ezviz_akun')
+                    ->select('id_ezviz_akun', 'nama_akun', 'email_terdaftar', 'app_key', 'api_url', 'status', 'last_sync', 'token_expiry', 'created_time')
             )->make(true);
         }
 
-        $data            = $this->getCommonData();
-        $data['title']   = 'Akun Ezviz';
+        $data = $this->getCommonData();
+        $data['title'] = 'Akun Ezviz';
         $data['content'] = 'module.masterdata.ezvizAkun.data';
         $data['ezvizAkunList'] = DB::table('cv_ezviz_akun')
-            ->select('id_ezviz_akun', 'nama_akun', 'email_terdaftar', 'app_key', 'api_url', 'status', 'last_sync', 'token_expiry', 'access_token', 'created_time')
+            ->select('id_ezviz_akun', 'nama_akun', 'email_terdaftar', 'app_key', 'api_url', 'status', 'last_sync', 'token_expiry', 'access_token', 'created_time', 'password_console')
             ->orderBy('nama_akun')
+            ->get();
+        // Lokasi untuk form import device
+        $data['lokasiList'] = DB::table('cv_lokasi')
+            ->join('cv_lokasi_group', 'cv_lokasi.id_group', '=', 'cv_lokasi_group.id_group')
+            ->select('cv_lokasi.id_lokasi', 'cv_lokasi.nama_lokasi', 'cv_lokasi_group.nama_group')
+            ->where('cv_lokasi.status', 'aktif')
+            ->orderBy('cv_lokasi_group.nama_group')
+            ->orderBy('cv_lokasi.nama_lokasi')
             ->get();
         return view('module.content', ['data' => $data]);
     }
@@ -266,13 +278,9 @@ class MasterDataController extends Controller
     {
         if ($param1 === 'save') {
             $validator = validator()->make($request->all(), [
-                'nama_akun'  => 'required|max:100',
-                'app_key'    => 'required|max:100',
-                'app_secret' => 'required|max:255',
+                'nama_akun' => 'required|max:100',
             ], [
-                'nama_akun.required'  => 'Nama akun tidak boleh kosong!',
-                'app_key.required'    => 'App Key tidak boleh kosong!',
-                'app_secret.required' => 'App Secret tidak boleh kosong!',
+                'nama_akun.required' => 'Nama akun tidak boleh kosong!',
             ]);
 
             if ($validator->fails()) {
@@ -281,65 +289,184 @@ class MasterDataController extends Controller
             }
 
             $id = GeneralModel::create('cv_ezviz_akun', [
-                'nama_akun'       => $request->nama_akun,
-                'deskripsi'       => $request->deskripsi,
+                'nama_akun' => $request->nama_akun,
+                'deskripsi' => $request->deskripsi,
                 'email_terdaftar' => $request->email_terdaftar,
-                'app_key'         => $request->app_key,
-                'app_secret'      => $request->app_secret,
-                'api_url'         => $request->api_url ?? 'https://open.ys7.com',
-                'status'          => $request->status ?? 'aktif',
-                'created_time'    => date('Y-m-d H:i:s'),
+                'password_console' => $request->password_console ? encrypt($request->password_console) : null,
+                'app_key' => $request->app_key ?: null,
+                'app_secret' => $request->app_secret ?: null,
+                'api_url' => $request->api_url ?? 'https://open.ys7.com',
+                'status' => $request->status ?? 'aktif',
+                'created_time' => date('Y-m-d H:i:s'),
             ]);
 
-            // Try to get token immediately
-            $akun = GeneralModel::getByIdGeneral('cv_ezviz_akun', 'first', 'id_ezviz_akun', $id);
-            $ezviz = new EzvizModel();
-            $tokenResult = $ezviz->getAccessToken($akun);
+            // Simpan token jika sudah tersedia dari scraping (dikirim via hidden field)
+            $scrapedToken  = $request->scraped_access_token ?: null;
+            $scrapedExpiry = $request->scraped_token_expiry ?: null;
+
+            if ($scrapedToken && $scrapedExpiry) {
+                // Token sudah ada dari scraping — langsung simpan
+                DB::table('cv_ezviz_akun')->where('id_ezviz_akun', $id)->update([
+                    'access_token' => $scrapedToken,
+                    'token_expiry' => $scrapedExpiry,
+                    'last_sync'    => date('Y-m-d H:i:s'),
+                ]);
+                $msg = 'Akun Ezviz berhasil ditambahkan dan access token berhasil disimpan!';
+            } elseif ($request->app_key && $request->app_secret) {
+                // Fallback: ambil token via API EZVIZ
+                $akun = GeneralModel::getByIdGeneral('cv_ezviz_akun', 'first', 'id_ezviz_akun', $id);
+                $ezviz = new EzvizModel();
+                $tokenResult = $ezviz->getAccessToken($akun);
+                $msg = $tokenResult['success']
+                    ? 'Akun Ezviz berhasil ditambahkan dan token berhasil diperoleh!'
+                    : 'Akun Ezviz ditambahkan, namun gagal mendapatkan token.';
+            } else {
+                $msg = 'Akun Ezviz berhasil ditambahkan. Gunakan tombol "Ambil AppKey" untuk mengisi credentials otomatis.';
+            }
 
             LogHelper::log('Tambah Akun Ezviz', 'MasterData', 'Tambah akun: ' . $request->nama_akun);
-
-            if ($tokenResult['success']) {
-                session()->flash('success', 'Akun Ezviz berhasil ditambahkan dan token berhasil diperoleh!');
-            } else {
-                session()->flash('warning', 'Akun Ezviz ditambahkan, namun gagal mendapatkan token. Periksa App Key & App Secret.');
-            }
+            session()->flash('success', $msg);
             return redirect()->to('/panel/masterData/daftarEzvizAkun');
         }
 
-        $data            = $this->getCommonData();
-        $data['title']   = 'Tambah Akun Ezviz';
+        $data = $this->getCommonData();
+        $data['title'] = 'Tambah Akun Ezviz';
         $data['content'] = 'module.masterdata.ezvizAkun.create';
         return view('module.content', ['data' => $data]);
+    }
+
+    // ===========================================================
+    // EZVIZ AKUN - SCRAPE APPKEY (via Flask scraper service)
+    // ===========================================================
+    public function scrapeEzvizAppKey(Request $request)
+    {
+        set_time_limit(0); // Scraping bisa makan waktu 60-90s, bebaskan limit PHP
+        $email    = trim($request->input('email', ''));
+        $password = trim($request->input('password', ''));
+
+        if (!$email || !$password) {
+            return response()->json(['success' => false, 'message' => 'Email dan password wajib diisi.'], 422);
+        }
+
+        $flaskUrl = config('services.ezviz_scraper_url', 'http://127.0.0.1:5055');
+
+        try {
+            $response = Http::timeout(180)->post($flaskUrl . '/scrape', [
+                'email'    => $email,
+                'password' => $password,
+            ]);
+
+            if (!$response->successful()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Flask scraper server error (HTTP ' . $response->status() . ').',
+                ], 500);
+            }
+
+            $result = $response->json();
+
+            if (!is_array($result)) {
+                return response()->json(['success' => false, 'message' => 'Respons scraper tidak valid.'], 500);
+            }
+
+            if ($result['success'] ?? false) {
+                LogHelper::log('Scrape AppKey Ezviz', 'MasterData', 'Scrape AppKey untuk email: ' . $email);
+
+                // Langsung ambil Access Token via API EZVIZ menggunakan AppKey+AppSecret hasil scraping
+                $appKey    = $result['appKey'] ?? null;
+                $appSecret = $result['appSecret'] ?? null;
+
+                // Gunakan api_url dari akun yang ada di DB (jika ada), fallback ke default
+                $existingAkun = DB::table('cv_ezviz_akun')
+                    ->where('email_terdaftar', $email)
+                    ->first();
+                $apiUrl = $existingAkun?->api_url ?: 'https://open.ys7.com';
+
+                if ($appKey && $appSecret) {
+                    try {
+                        $tokenResp = Http::timeout(15)->asForm()->post($apiUrl . '/api/lapp/token/get', [
+                            'appKey'    => $appKey,
+                            'appSecret' => $appSecret,
+                        ]);
+                        $tokenData = $tokenResp->json();
+                        if (isset($tokenData['code']) && $tokenData['code'] == '200') {
+                            $data = $tokenData['data'] ?? [];
+                            // API EZVIZ bisa pakai 'accessToken' atau 'access_token' tergantung server
+                            $token = $data['accessToken'] ?? $data['access_token'] ?? $data['token'] ?? null;
+                            $expireMs = $data['expireTime'] ?? $data['expire_time'] ?? 0;
+                            $result['accessToken'] = $token;
+                            $result['tokenExpiry']  = $expireMs ? date('Y-m-d H:i:s', intval($expireMs / 1000)) : null;
+                        } else {
+                            $result['tokenError'] = ($tokenData['msg'] ?? $tokenData['message'] ?? 'Gagal ambil token dari API EZVIZ')
+                                . ' [code=' . ($tokenData['code'] ?? '?') . ']';
+                        }
+                        // Debug: sertakan raw response agar mudah diagnosis
+                        $result['_tokenApiRaw'] = $tokenData;
+                    } catch (\Exception $te) {
+                        $result['tokenError'] = 'Error API token: ' . $te->getMessage();
+                    }
+                }
+            }
+
+            return response()->json($result);
+
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak dapat terhubung ke Flask scraper service (http://127.0.0.1:5055). '
+                           . 'Pastikan service sudah berjalan.',
+            ], 503);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+        }
     }
 
     public function updateEzvizAkun(Request $request, $param1 = '', $param2 = '')
     {
         if ($param2 === 'save') {
             $updateData = [
-                'nama_akun'       => $request->nama_akun,
-                'deskripsi'       => $request->deskripsi,
+                'nama_akun' => $request->nama_akun,
+                'deskripsi' => $request->deskripsi,
                 'email_terdaftar' => $request->email_terdaftar,
-                'app_key'         => $request->app_key,
-                'api_url'         => $request->api_url ?? 'https://open.ys7.com',
-                'status'          => $request->status ?? 'aktif',
+                'app_key' => $request->app_key ?: null,
+                'api_url' => $request->api_url ?? 'https://open.ys7.com',
+                'status' => $request->status ?? 'aktif',
             ];
+
+            // Update password_console hanya jika diisi
+            if (!empty($request->password_console)) {
+                $updateData['password_console'] = encrypt($request->password_console);
+            }
 
             if (!empty($request->app_secret)) {
                 $updateData['app_secret'] = $request->app_secret;
                 // Invalidate token since secret changed
                 $updateData['access_token'] = null;
-                $updateData['token_expiry']  = null;
+                $updateData['token_expiry'] = null;
             }
 
             GeneralModel::updateById('cv_ezviz_akun', $updateData, 'id_ezviz_akun', $param1);
             LogHelper::log('Update Akun Ezviz', 'MasterData', 'Update akun ID: ' . $param1);
-            session()->flash('success', 'Akun Ezviz berhasil diupdate!');
+
+            // Coba ambil token jika app_key & app_secret tersedia
+            $akun = GeneralModel::getByIdGeneral('cv_ezviz_akun', 'first', 'id_ezviz_akun', $param1);
+            if ($akun && $akun->app_key && $akun->app_secret) {
+                $ezviz = new EzvizModel();
+                $tokenResult = $ezviz->getAccessToken($akun);
+                $msg = $tokenResult['success']
+                    ? 'Akun Ezviz berhasil diupdate dan access token berhasil diperbarui!'
+                    : 'Akun Ezviz diupdate, namun gagal mendapatkan access token: ' . ($tokenResult['message'] ?? 'unknown error');
+            } else {
+                $msg = 'Akun Ezviz berhasil diupdate!';
+            }
+
+            session()->flash('success', $msg);
             return redirect()->to('/panel/masterData/daftarEzvizAkun');
         }
 
-        $data             = $this->getCommonData();
-        $data['title']    = 'Update Akun Ezviz';
-        $data['content']  = 'module.masterdata.ezvizAkun.update';
+        $data = $this->getCommonData();
+        $data['title'] = 'Update Akun Ezviz';
+        $data['content'] = 'module.masterdata.ezvizAkun.update';
         $data['ezvizAkun'] = GeneralModel::getByIdGeneral('cv_ezviz_akun', 'first', 'id_ezviz_akun', $param1);
 
         if (!$data['ezvizAkun']) {
@@ -361,5 +488,83 @@ class MasterDataController extends Controller
         LogHelper::log('Hapus Akun Ezviz', 'MasterData', 'Hapus akun ezviz ID: ' . $param1);
         session()->flash('success', 'Akun Ezviz berhasil dihapus!');
         return redirect()->to('/panel/masterData/daftarEzvizAkun');
+    }
+
+    // ===========================================================
+    // EZVIZ AKUN - SCRAPE DEVICE LIST (via Flask scraper service)
+    // ===========================================================
+    public function scrapeEzvizDevices(Request $request)
+    {
+        set_time_limit(0); // Scraping bisa makan waktu 60-90s, bebaskan limit PHP
+
+        $idAkun = $request->input('id_ezviz_akun');
+
+        if (!$idAkun) {
+            return response()->json(['success' => false, 'message' => 'id_ezviz_akun wajib diisi.'], 422);
+        }
+
+        $akun = DB::table('cv_ezviz_akun')->where('id_ezviz_akun', $idAkun)->first();
+        if (!$akun) {
+            return response()->json(['success' => false, 'message' => 'Akun EZVIZ tidak ditemukan.'], 404);
+        }
+
+        $email = $akun->email_terdaftar;
+        if (!$email) {
+            return response()->json(['success' => false, 'message' => 'Email akun EZVIZ belum diisi.'], 422);
+        }
+
+        if (!$akun->password_console) {
+            return response()->json(['success' => false, 'message' => 'Password console belum disimpan untuk akun ini.'], 422);
+        }
+
+        try {
+            $password = decrypt($akun->password_console);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal mendekripsi password. Coba simpan ulang akun.'], 500);
+        }
+
+        $flaskUrl = config('services.ezviz_scraper_url', 'http://127.0.0.1:5055');
+
+        try {
+            $response = Http::timeout(180)->post($flaskUrl . '/scrape-devices', [
+                'email'    => $email,
+                'password' => $password,
+            ]);
+
+            if (!$response->successful()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Flask scraper server error (HTTP ' . $response->status() . ').',
+                ], 500);
+            }
+
+            $result = $response->json();
+
+            // Tandai device yang sudah ada di sistem
+            if (!empty($result['devices'])) {
+                $existingSerials = DB::table('cv_cctv')
+                    ->where('id_ezviz_akun', $idAkun)
+                    ->pluck('device_serial')
+                    ->map(fn($s) => strtoupper($s))
+                    ->toArray();
+
+                $result['devices'] = array_map(function ($device) use ($existingSerials) {
+                    $device['already_added'] = in_array(strtoupper($device['serial']), $existingSerials);
+                    return $device;
+                }, $result['devices']);
+            }
+
+            LogHelper::log('Scrape Device EZVIZ', 'MasterData', 'Scrape device list akun: ' . $akun->nama_akun);
+
+            return response()->json($result);
+
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak dapat terhubung ke Flask scraper service. Pastikan service sudah berjalan.',
+            ], 503);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+        }
     }
 }

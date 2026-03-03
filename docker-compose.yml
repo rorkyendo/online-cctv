@@ -1,0 +1,24 @@
+services:
+
+  # ============================================================
+  # EZVIZ Flask Scraper Service
+  # Scrape AppKey & Secret dari EZVIZ Open Platform portal
+  # ============================================================
+  ezviz-scraper:
+    build:
+      context: .
+      dockerfile: tools/Dockerfile
+    container_name: ezviz-scraper
+    ports:
+      - "5055:5055"
+    environment:
+      FLASK_HOST: "0.0.0.0"
+      FLASK_PORT: "5055"
+      CHROME_BIN: "/usr/bin/google-chrome"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5055/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s

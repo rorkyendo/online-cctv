@@ -359,4 +359,73 @@ class CCTVController extends Controller
         $result = $this->ezviz->getAccessToken($akun);
         return response()->json($result);
     }
+
+    // -------------------------------------------------------
+    // Import device dari EZVIZ portal ke sistem (AJAX)
+    // -------------------------------------------------------
+    public function importDevice(Request $request)
+    {
+        $validator = validator()->make($request->all(), [
+            'id_ezviz_akun' => 'required|integer',
+            'id_lokasi'     => 'required|integer',
+            'device_serial' => 'required|max:100',
+            'nama_cctv'     => 'required|max:150',
+            'channel_no'    => 'nullable|integer|min:1',
+        ], [
+            'id_ezviz_akun.required' => 'Akun EZVIZ wajib dipilih.',
+            'id_lokasi.required'     => 'Lokasi wajib dipilih.',
+            'device_serial.required' => 'Serial device wajib diisi.',
+            'nama_cctv.required'     => 'Nama CCTV wajib diisi.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+        }
+
+        // Cek lokasi group access
+        $lokasi = GeneralModel::getByIdGeneral('cv_lokasi', 'first', 'id_lokasi', $request->id_lokasi);
+        if (!$lokasi) {
+            return response()->json(['success' => false, 'message' => 'Lokasi tidak ditemukan.'], 404);
+        }
+        if (!AccessHelper::cekCctvGroupAkses($lokasi->id_group)) {
+            return response()->json(['success' => false, 'message' => 'Anda tidak memiliki akses ke lokasi ini.'], 403);
+        }
+
+        // Cek duplikat serial di akun yang sama
+        $exists = DB::table('cv_cctv')
+            ->where('id_ezviz_akun', $request->id_ezviz_akun)
+            ->where('device_serial', $request->device_serial)
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Device serial ' . $request->device_serial . ' sudah ada di sistem untuk akun ini.',
+            ], 409);
+        }
+
+        $id = GeneralModel::create('cv_cctv', [
+            'id_lokasi'     => $request->id_lokasi,
+            'id_ezviz_akun' => $request->id_ezviz_akun,
+            'nama_cctv'     => $request->nama_cctv,
+            'device_serial' => strtoupper($request->device_serial),
+            'channel_no'    => $request->channel_no ?? 1,
+            'stream_type'   => 1,
+            'validCode'     => $request->validCode ?: null,
+            'deskripsi'     => $request->deskripsi ?: null,
+            'posisi'        => $request->posisi ?: null,
+            'status'        => $request->device_status ?? 'offline',
+            'created_time'  => date('Y-m-d H:i:s'),
+        ]);
+
+        LogHelper::log('Import Device EZVIZ', 'CCTV',
+            'Import device ' . $request->device_serial . ' sebagai "' . $request->nama_cctv . '"'
+        );
+
+        return response()->json([
+            'success'  => true,
+            'id_cctv'  => $id,
+            'message'  => 'Device ' . $request->device_serial . ' berhasil ditambahkan ke sistem!',
+        ]);
+    }
 }

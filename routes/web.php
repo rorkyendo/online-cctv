@@ -29,7 +29,7 @@ Route::middleware(['auth'])->prefix('panel')->group(function () {
 
     // Profile
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
-Route::post('/updateProfile', [ProfileController::class, 'updateProfile'])->name('updateProfile');
+    Route::post('/updateProfile', [ProfileController::class, 'updateProfile'])->name('updateProfile');
     Route::post('/updatePassword', [ProfileController::class, 'updatePassword'])->name('updatePassword');
 
     // Protected routes (require module access)
@@ -65,6 +65,7 @@ Route::post('/updateProfile', [ProfileController::class, 'updateProfile'])->name
             Route::post('/captureCCTV/{param1}', [CCTVController::class, 'captureCCTV'])->name('captureCCTV');
             Route::post('/syncDevices/{param1?}', [CCTVController::class, 'syncDevices'])->name('syncDevices');
             Route::post('/refreshToken/{param1}', [CCTVController::class, 'refreshToken'])->name('refreshToken');
+            Route::post('/importDevice', [CCTVController::class, 'importDevice'])->name('importDevice');
         });
 
         // Master Data - Pengguna
@@ -85,6 +86,8 @@ Route::post('/updateProfile', [ProfileController::class, 'updateProfile'])->name
             Route::any('/tambahEzvizAkun/{param1?}', [MasterDataController::class, 'tambahEzvizAkun'])->name('tambahEzvizAkun');
             Route::any('/updateEzvizAkun/{param1?}/{param2?}', [MasterDataController::class, 'updateEzvizAkun'])->name('updateEzvizAkun');
             Route::get('/hapusEzvizAkun/{param1}', [MasterDataController::class, 'hapusEzvizAkun'])->name('hapusEzvizAkun');
+            Route::post('/scrapeEzvizAppKey', [MasterDataController::class, 'scrapeEzvizAppKey'])->name('scrapeEzvizAppKey');
+            Route::post('/scrapeEzvizDevices', [MasterDataController::class, 'scrapeEzvizDevices'])->name('scrapeEzvizDevices');
         });
 
         // Pengaturan

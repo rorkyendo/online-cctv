@@ -33,6 +33,9 @@ class CheckAccess
 
         $sessionUser = session()->get('user');
         if (!$sessionUser) {
+            if ($this->isAjax($request)) {
+                return response()->json(['success' => false, 'message' => 'Sesi habis. Silakan login kembali.'], 401);
+            }
             return redirect()->to('/login');
         }
 
@@ -66,6 +69,18 @@ class CheckAccess
             return $next($request);
         }
 
+        if ($this->isAjax($request)) {
+            return response()->json(['success' => false, 'message' => 'Akses tidak diizinkan.'], 403);
+        }
+
         return redirect()->to('/unauthorized');
+    }
+
+    private function isAjax(Request $request): bool
+    {
+        return $request->wantsJson()
+            || $request->ajax()
+            || str_contains($request->header('Content-Type', ''), 'application/json')
+            || str_contains($request->header('Accept', ''), 'application/json');
     }
 }

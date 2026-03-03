@@ -52,6 +52,14 @@
                        class="btn btn-sm btn-light-warning flex-grow-1">
                         <i class="bi bi-pencil me-1"></i>Edit
                     </a>
+                    <button class="btn btn-sm btn-light-success"
+                            data-akun-id="{{ $akun->id_ezviz_akun }}"
+                            data-akun-nama="{{ $akun->nama_akun }}"
+                            data-has-password="{{ $akun->password_console ? '1' : '0' }}"
+                            onclick="lihatDevice(this)"
+                            title="Lihat &amp; Import Device dari Portal">
+                        <i class="bi bi-camera-video"></i>
+                    </button>
                     <button class="btn btn-sm btn-light-info"
                             onclick="refreshToken({{ $akun->id_ezviz_akun }}, this)" title="Refresh Token">
                         <i class="bi bi-arrow-repeat"></i>
@@ -81,32 +89,327 @@
     @endforelse
 </div>
 
+{{-- =========================================================== --}}
+{{-- MODAL: Daftar Device EZVIZ                                --}}
+{{-- =========================================================== --}}
+<div class="modal fade" id="modalDeviceList" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-camera-video me-2 text-success"></i>
+                    Daftar Device — <span id="modalAkunNama" class="text-primary"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {{-- Loading --}}
+                <div id="deviceLoadingState" class="text-center py-10 d-none">
+                    <div class="spinner-border text-primary mb-4" style="width:2.5rem;height:2.5rem"></div>
+                    <p class="text-muted">Sedang login ke EZVIZ portal dan mengambil daftar device...<br>
+                        <small>Proses ini membutuhkan ~30 detik.</small></p>
+                </div>
+                {{-- Error --}}
+                <div id="deviceErrorState" class="d-none">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <span id="deviceErrorMsg"></span>
+                    </div>
+                </div>
+                {{-- No password --}}
+                <div id="deviceNoPasswordState" class="d-none">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-key me-2"></i>
+                        <strong>Password console belum tersimpan</strong> untuk akun ini.<br>
+                        Silakan <a id="linkEditAkun" href="#" class="alert-link">edit akun</a> dan simpan
+                        <em>Password Ezviz Console</em> agar device dapat diambil otomatis.
+                    </div>
+                </div>
+                {{-- Device table --}}
+                <div id="deviceTableState" class="d-none">
+                    <div class="alert alert-info d-flex align-items-center mb-4">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <span id="deviceTotalMsg"></span>
+                        <span class="ms-2 text-muted fs-7">— Klik <strong>Tambah</strong> untuk memasukkan device ke sistem Anda.</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Serial Number</th>
+                                    <th>Nama (Portal)</th>
+                                    <th>Status</th>
+                                    <th>Ch.</th>
+                                    <th>Tgl. Tambah</th>
+                                    <th class="text-end">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="deviceTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- =========================================================== --}}
+{{-- MODAL: Import Device ke Sistem                             --}}
+{{-- =========================================================== --}}
+<div class="modal fade" id="modalImportDevice" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-light-success">
+                <h5 class="modal-title text-success">
+                    <i class="bi bi-plus-square me-2"></i>Tambah Device ke Sistem
+                </h5>
+                <button type="button" class="btn-close" onclick="backToDeviceList()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="p-4 bg-light rounded mb-6 d-flex align-items-center gap-4">
+                    <i class="bi bi-camera-video fs-1 text-success"></i>
+                    <div>
+                        <div class="fw-bold fs-5 font-monospace" id="importSerialDisplay"></div>
+                        <div class="text-muted fs-7" id="importNameDisplay"></div>
+                    </div>
+                </div>
+
+                <input type="hidden" id="importAkunId">
+                <input type="hidden" id="importSerial">
+                <input type="hidden" id="importChannelNo">
+                <input type="hidden" id="importDeviceStatus">
+
+                <div class="row g-5">
+                    <div class="col-md-6">
+                        <div class="mb-5">
+                            <label class="form-label required fw-semibold">Nama CCTV di Sistem</label>
+                            <input type="text" id="importNamaCctv" class="form-control"
+                                placeholder="Contoh: Kamera Pintu Depan">
+                            <div class="form-text text-muted">Nama yang muncul di dashboard sistem kita</div>
+                        </div>
+                        <div class="mb-5">
+                            <label class="form-label required fw-semibold">Lokasi</label>
+                            <select id="importLokasi" class="form-select">
+                                <option value="">— Pilih Lokasi —</option>
+                                @php $lastGroup = '' @endphp
+                                @foreach($data['lokasiList'] as $lok)
+                                    @if($lok->nama_group !== $lastGroup)
+                                        @if($lastGroup !== '') </optgroup> @endif
+                                        <optgroup label="{{ $lok->nama_group }}">
+                                        @php $lastGroup = $lok->nama_group @endphp
+                                    @endif
+                                    <option value="{{ $lok->id_lokasi }}">{{ $lok->nama_lokasi }}</option>
+                                @endforeach
+                                @if($lastGroup !== '') </optgroup> @endif
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-5">
+                            <label class="form-label fw-semibold">Validation Code</label>
+                            <input type="text" id="importValidCode" class="form-control font-monospace"
+                                placeholder="6 karakter, dari stiker device" maxlength="10">
+                            <div class="form-text text-muted">Tertera di stiker belakang/bawah kamera</div>
+                        </div>
+                        <div class="mb-5">
+                            <label class="form-label fw-semibold">Posisi / Label</label>
+                            <input type="text" id="importPosisi" class="form-control"
+                                placeholder="Contoh: Pojok NE, Pintu utama">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" onclick="backToDeviceList()">
+                    <i class="bi bi-arrow-left me-2"></i>Kembali
+                </button>
+                <button type="button" class="btn btn-success" id="btnDoImport" onclick="doImport()">
+                    <i class="bi bi-plus-circle me-2"></i>Tambahkan ke Sistem
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+let activeAkunId = null;
+
+// ── Refresh Token ────────────────────────────────────────────
 function refreshToken(id, btn) {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-
     fetch(`/panel/cctv/refreshToken/${id}`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        }
+        headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}'}
     })
     .then(r => r.json())
     .then(data => {
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-arrow-repeat"></i>';
-        if (data.success) {
-            alert('Token berhasil diperbarui!');
-            location.reload();
-        } else {
-            alert('Gagal refresh token: ' + (data.message || 'Error'));
-        }
+        if (data.success) { alert('Token berhasil diperbarui!'); location.reload(); }
+        else { alert('Gagal refresh token: ' + (data.message || 'Error')); }
     })
     .catch(e => {
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-arrow-repeat"></i>';
+        alert('Error: ' + e.message);
+    });
+}
+
+// ── Lihat Device ─────────────────────────────────────────────
+function lihatDevice(btn) {
+    const akunId   = btn.dataset.akunId;
+    const akunNama = btn.dataset.akunNama;
+    const hasPass  = btn.dataset.hasPassword === '1';
+
+    activeAkunId = akunId;
+    document.getElementById('modalAkunNama').textContent = akunNama;
+
+    ['deviceLoadingState','deviceErrorState','deviceTableState','deviceNoPasswordState']
+        .forEach(id => document.getElementById(id).classList.add('d-none'));
+
+    const modal = new bootstrap.Modal(document.getElementById('modalDeviceList'));
+    modal.show();
+
+    if (!hasPass) {
+        document.getElementById('linkEditAkun').href = '/panel/masterData/updateEzvizAkun/' + akunId;
+        document.getElementById('deviceNoPasswordState').classList.remove('d-none');
+        return;
+    }
+
+    document.getElementById('deviceLoadingState').classList.remove('d-none');
+
+    fetch('{{ url("/panel/masterData/scrapeEzvizDevices") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}'},
+        body: JSON.stringify({id_ezviz_akun: akunId})
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('deviceLoadingState').classList.add('d-none');
+        if (!data.success) {
+            document.getElementById('deviceErrorMsg').textContent = data.message || 'Terjadi kesalahan.';
+            document.getElementById('deviceErrorState').classList.remove('d-none');
+            return;
+        }
+        renderDeviceTable(data.devices, data.total);
+    })
+    .catch(e => {
+        document.getElementById('deviceLoadingState').classList.add('d-none');
+        document.getElementById('deviceErrorMsg').textContent = 'Koneksi gagal: ' + e.message;
+        document.getElementById('deviceErrorState').classList.remove('d-none');
+    });
+}
+
+// ── Render tabel device ──────────────────────────────────────
+function renderDeviceTable(devices, total) {
+    document.getElementById('deviceTotalMsg').textContent = total + ' device ditemukan';
+    const tbody = document.getElementById('deviceTableBody');
+    tbody.innerHTML = '';
+
+    if (!devices || devices.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-6">Tidak ada device di akun ini.</td></tr>';
+    } else {
+        devices.forEach(dev => {
+            const badge = dev.status === 'online'
+                ? '<span class="badge badge-light-success"><i class="bi bi-circle-fill me-1 fs-9"></i>Online</span>'
+                : '<span class="badge badge-light-secondary"><i class="bi bi-circle me-1 fs-9"></i>Offline</span>';
+
+            const action = dev.already_added
+                ? '<span class="badge badge-light-success"><i class="bi bi-check-circle me-1"></i>Sudah ditambahkan</span>'
+                : `<button class="btn btn-sm btn-success" onclick="openImportForm('${dev.serial}','${(dev.name||'').replace(/'/g,"\\'")}',${dev.channel_no},'${dev.status}')"><i class="bi bi-plus me-1"></i>Tambah</button>`;
+
+            tbody.innerHTML += `
+                <tr id="row-${dev.serial}"${dev.already_added ? ' class="table-light"' : ''}>
+                    <td><span class="font-monospace fw-bold text-dark">${dev.serial}</span></td>
+                    <td>${dev.name || '-'}</td>
+                    <td>${badge}</td>
+                    <td>${dev.channel_no}</td>
+                    <td class="text-muted fs-7">${dev.adding_time || '-'}</td>
+                    <td class="text-end" id="action-${dev.serial}">${action}</td>
+                </tr>`;
+        });
+    }
+    document.getElementById('deviceTableState').classList.remove('d-none');
+}
+
+// ── Buka form import ─────────────────────────────────────────
+function openImportForm(serial, name, channelNo, status) {
+    document.getElementById('importAkunId').value       = activeAkunId;
+    document.getElementById('importSerial').value       = serial;
+    document.getElementById('importChannelNo').value    = channelNo;
+    document.getElementById('importDeviceStatus').value = status;
+    document.getElementById('importNamaCctv').value     = name;
+    document.getElementById('importValidCode').value    = '';
+    document.getElementById('importPosisi').value       = '';
+    document.getElementById('importLokasi').value       = '';
+    document.getElementById('importSerialDisplay').textContent = 'Serial: ' + serial;
+    document.getElementById('importNameDisplay').textContent   = 'Nama di portal: ' + name;
+
+    bootstrap.Modal.getInstance(document.getElementById('modalDeviceList')).hide();
+    new bootstrap.Modal(document.getElementById('modalImportDevice')).show();
+}
+
+// ── Kembali ke daftar device ─────────────────────────────────
+function backToDeviceList() {
+    const im = bootstrap.Modal.getInstance(document.getElementById('modalImportDevice'));
+    if (im) im.hide();
+    setTimeout(() => {
+        const lm = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDeviceList'));
+        lm.show();
+    }, 300);
+}
+
+// ── Simpan import device ─────────────────────────────────────
+function doImport() {
+    const namaCctv = document.getElementById('importNamaCctv').value.trim();
+    const lokasi   = document.getElementById('importLokasi').value;
+
+    if (!namaCctv) { alert('Nama CCTV wajib diisi.'); return; }
+    if (!lokasi)   { alert('Lokasi wajib dipilih.');  return; }
+
+    const btn = document.getElementById('btnDoImport');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...';
+
+    fetch('{{ url("/panel/cctv/importDevice") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}'},
+        body: JSON.stringify({
+            id_ezviz_akun: document.getElementById('importAkunId').value,
+            device_serial: document.getElementById('importSerial').value,
+            channel_no:    document.getElementById('importChannelNo').value,
+            device_status: document.getElementById('importDeviceStatus').value,
+            nama_cctv:     namaCctv,
+            id_lokasi:     lokasi,
+            validCode:     document.getElementById('importValidCode').value,
+            posisi:        document.getElementById('importPosisi').value,
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-plus-circle me-2"></i>Tambahkan ke Sistem';
+
+        if (data.success) {
+            const serial = document.getElementById('importSerial').value;
+            const cell = document.getElementById('action-' + serial);
+            if (cell) cell.innerHTML = '<span class="badge badge-light-success"><i class="bi bi-check-circle me-1"></i>Sudah ditambahkan</span>';
+            const row = document.getElementById('row-' + serial);
+            if (row) row.classList.add('table-light');
+
+            backToDeviceList();
+            setTimeout(() => alert('✓ ' + data.message), 350);
+        } else {
+            alert('Gagal: ' + (data.message || 'Terjadi kesalahan.'));
+        }
+    })
+    .catch(e => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-plus-circle me-2"></i>Tambahkan ke Sistem';
         alert('Error: ' + e.message);
     });
 }

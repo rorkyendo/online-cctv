@@ -58,12 +58,12 @@ CREATE TABLE IF NOT EXISTS `cv_hak_akses` (
 
 INSERT INTO `cv_hak_akses` (`id_hak_akses`, `nama_hak_akses`, `deskripsi`, `modul_akses`, `parent_modul_akses`, `cctv_group_akses`) VALUES
 (1, 'superuser', 'Super Administrator - Akses penuh ke semua fitur dan semua grup CCTV',
-'{"modul":["daftarPengguna","tambahPengguna","updatePengguna","hapusPengguna","daftarHakAkses","tambahHakAkses","updateHakAkses","hapusHakAkses","daftarEzvizAkun","tambahEzvizAkun","updateEzvizAkun","hapusEzvizAkun","daftarGrupLokasi","tambahGrupLokasi","updateGrupLokasi","hapusGrupLokasi","detailGrupLokasi","daftarLokasi","tambahLokasi","updateLokasi","hapusLokasi","detailLokasi","daftarCCTV","tambahCCTV","updateCCTV","hapusCCTV","detailCCTV","streamCCTV","pengaturanSistem","logAktivitas"]}',
+'"modul":["daftarPengguna","tambahPengguna","updatePengguna","hapusPengguna","daftarHakAkses","tambahHakAkses","updateHakAkses","hapusHakAkses","daftarEzvizAkun","tambahEzvizAkun","updateEzvizAkun","hapusEzvizAkun","scrapeEzvizAppKey","scrapeEzvizDevices","daftarGrupLokasi","tambahGrupLokasi","updateGrupLokasi","hapusGrupLokasi","detailGrupLokasi","daftarLokasi","tambahLokasi","updateLokasi","hapusLokasi","detailLokasi","daftarCCTV","tambahCCTV","updateCCTV","hapusCCTV","detailCCTV","streamCCTV","importDevice","syncDevices","captureCCTV","refreshToken","pengaturanSistem","logAktivitas"]}',
 '{"parent_modul":["Dashboard","GrupLokasi","Lokasi","CCTV","MasterData","Pengaturan"]}',
 NULL),
 
 (2, 'admin', 'Administrator - Akses ke semua grup CCTV namun tidak bisa kelola hak akses',
-'{"modul":["daftarPengguna","daftarEzvizAkun","tambahEzvizAkun","updateEzvizAkun","daftarGrupLokasi","tambahGrupLokasi","updateGrupLokasi","detailGrupLokasi","daftarLokasi","tambahLokasi","updateLokasi","detailLokasi","daftarCCTV","tambahCCTV","updateCCTV","hapusCCTV","detailCCTV","streamCCTV","logAktivitas"]}',
+'"modul":["daftarPengguna","daftarEzvizAkun","tambahEzvizAkun","updateEzvizAkun","scrapeEzvizAppKey","scrapeEzvizDevices","daftarGrupLokasi","tambahGrupLokasi","updateGrupLokasi","detailGrupLokasi","daftarLokasi","tambahLokasi","updateLokasi","detailLokasi","daftarCCTV","tambahCCTV","updateCCTV","hapusCCTV","detailCCTV","streamCCTV","importDevice","syncDevices","captureCCTV","refreshToken","logAktivitas"]}',
 '{"parent_modul":["Dashboard","GrupLokasi","Lokasi","CCTV","MasterData","Pengaturan"]}',
 NULL),
 
@@ -195,17 +195,26 @@ CREATE TABLE IF NOT EXISTS `cv_ezviz_akun` (
   `id_ezviz_akun` int NOT NULL AUTO_INCREMENT,
   `nama_akun` varchar(100) NOT NULL COMMENT 'Friendly name for this account/node',
   `deskripsi` varchar(500) DEFAULT NULL,
-  `email_terdaftar` varchar(150) DEFAULT NULL COMMENT 'Gmail used to register on EZVIZ app',
-  `app_key` varchar(100) NOT NULL COMMENT 'From EZVIZ Open Platform',
-  `app_secret` varchar(255) NOT NULL COMMENT 'From EZVIZ Open Platform',
+  `email_terdaftar` varchar(150) DEFAULT NULL COMMENT 'Email / username untuk login ke Ezviz Console (isgpopen.ezviz.com)',
+  `password_console` varchar(255) DEFAULT NULL COMMENT 'Password untuk login ke Ezviz Console, dipakai untuk auto-scraping AppKey',
+  `app_key` varchar(100) DEFAULT NULL COMMENT 'AppKey dari EZVIZ Open Platform (bisa diisi manual atau scraping otomatis)',
+  `app_secret` varchar(255) DEFAULT NULL COMMENT 'Secret dari EZVIZ Open Platform (bisa diisi manual atau scraping otomatis)',
   `access_token` text DEFAULT NULL COMMENT 'Auto-retrieved via API',
   `token_expiry` datetime DEFAULT NULL COMMENT 'When the access token expires',
   `api_url` varchar(255) DEFAULT 'https://open.ys7.com' COMMENT 'EZVIZ API base URL (may differ by region)',
   `status` enum('aktif','nonaktif') DEFAULT 'aktif',
   `last_sync` datetime DEFAULT NULL COMMENT 'Last time token was refreshed',
+  `last_scrape` datetime DEFAULT NULL COMMENT 'Last time AppKey was scraped from Ezviz Console',
   `created_time` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_ezviz_akun`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- SQL untuk ALTER TABLE jika tabel sudah ada:
+-- ALTER TABLE `cv_ezviz_akun`
+--   ADD COLUMN `password_console` varchar(255) DEFAULT NULL COMMENT 'Password login Ezviz Console' AFTER `email_terdaftar`,
+--   ADD COLUMN `last_scrape` datetime DEFAULT NULL AFTER `last_sync`,
+--   MODIFY COLUMN `app_key` varchar(100) DEFAULT NULL,
+--   MODIFY COLUMN `app_secret` varchar(255) DEFAULT NULL;
 
 
 -- ============================================================
