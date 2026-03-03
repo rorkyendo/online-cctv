@@ -196,7 +196,6 @@
         {{-- Protocol selector --}}
         <select id="globalProtocol" class="form-select form-select-sm w-auto" style="background:#2b2b3d;color:#fff;border-color:#3d3d5c;">
             <option value="ezopen" selected>EZOPEN</option>
-            <option value="hls">HLS</option>
         </select>
 
         {{-- Actions --}}
@@ -311,6 +310,7 @@
 </div>
 
 {{-- EZUIKit.js — official EZVIZ web player SDK (UMD build) --}}
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/ezuikit-js/ezuikit.js"></script>
 
 {{-- ──────────────────────────────────────────────── --}}
@@ -433,15 +433,16 @@ function playHls(id, url) {
     video.muted = globalMuted;
 
     if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-        const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+        const hls = new Hls({ enableWorker: true, lowLatencyMode: true, backBufferLength: 90 });
         hls.loadSource(url);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            video.muted = true;
             video.play().catch(() => {});
             setOverlay(id, 'ok');
         });
         hls.on(Hls.Events.ERROR, (event, d) => {
-            if (d.fatal) setOverlay(id, 'error', 'HLS error: ' + d.type);
+            if (d.fatal) setOverlay(id, 'error', 'HLS error: ' + (d.details || d.type));
         });
         playerMap[id] = hls;
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {

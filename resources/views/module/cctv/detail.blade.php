@@ -52,15 +52,13 @@
                 <div class="card-toolbar">
                     <div class="d-flex gap-2">
                         <select id="stream-protocol" class="form-select form-select-sm w-auto">
-                            <option value="hls">HLS</option>
-                            <option value="ezopen">EZOpen</option>
-                            <option value="rtmp">RTMP</option>
+                            <option value="ezopen" selected>EZOPEN</option>
                         </select>
                     </div>
                 </div>
             </div>
             <div class="card-body p-0">
-                <div id="stream-container" class="video-container" style="min-height: 400px; background: #1a1a2e; border-radius: 0 0 12px 12px;">
+                <div id="stream-container" class="video-container" style="min-height: 400px; background: #1a1a2e; border-radius: 0 0 12px 12px; position:relative;">
                     <div id="stream-placeholder" class="video-overlay flex-column gap-3">
                         <i class="bi bi-camera-video fs-1 opacity-50"></i>
                         <span class="opacity-75 fs-6">Klik "Live View" untuk memulai streaming</span>
@@ -68,9 +66,10 @@
                             <i class="bi bi-play-fill me-2"></i>Mulai Live View
                         </button>
                     </div>
+                    {{-- EZUIKit player container --}}
+                    <div id="detail-player" style="display:none; width:100%; height:100%; min-height:400px;"></div>
+                    {{-- HLS video fallback --}}
                     <video id="cctv-video" controls autoplay muted playsinline style="display:none; width:100%; max-height:500px;"></video>
-                    <!-- For EZOpen protocol - iframe -->
-                    <iframe id="cctv-iframe" style="display:none; width:100%; min-height:400px; border:none;"></iframe>
                     <div id="stream-loading" style="display:none;" class="video-overlay">
                         <div class="spinner-border text-white" role="status"></div>
                         <span class="ms-3 text-white">Menghubungkan ke kamera...</span>
@@ -175,19 +174,33 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ezuikit-js/ezuikit.js"></script>
 <script>
     const csrfToken = '{{ csrf_token() }}';
+    let detailPlayer = null;
+
+    function destroyDetailPlayer() {
+        if (detailPlayer) {
+            try { detailPlayer.stop(); detailPlayer.destroy(); } catch(e) {}
+            detailPlayer = null;
+        }
+        const cont = document.getElementById('detail-player');
+        if (cont) cont.innerHTML = '';
+    }
 
     function showStreamLoading() {
+        destroyDetailPlayer();
         document.getElementById('stream-placeholder').style.display = 'none';
         document.getElementById('cctv-video').style.display = 'none';
-        document.getElementById('cctv-iframe').style.display = 'none';
+        document.getElementById('detail-player').style.display = 'none';
         document.getElementById('stream-error').style.display = 'none';
         document.getElementById('stream-loading').style.display = 'flex';
     }
 
     function showStreamError(msg) {
         document.getElementById('stream-loading').style.display = 'none';
+        document.getElementById('detail-player').style.display = 'none';
         document.getElementById('stream-error-msg').innerText = msg || 'Gagal memuat stream';
         document.getElementById('stream-error').style.display = 'flex';
     }
@@ -198,68 +211,93 @@
 
         fetch(`/panel/cctv/streamCCTV/${cctvId}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-            },
-            body: JSON.stringify({ protocol: protocol })
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ protocol })
         })
         .then(res => res.json())
         .then(data => {
             document.getElementById('stream-loading').style.display = 'none';
             if (data.success && data.url) {
-                if (protocol === 'hls') {
-                    playHLS(data.url);
-                } else if (protocol === 'ezopen') {
-                    playEZOpen(data.url);
+                if (data.url.startsWith('ezopen://') || protocol === 'ezopen') {
+                    playEZOpen(data.url, data.access_token, data.api_url);
                 } else {
-                    playWithVideo(data.url);
+                    playHLS(data.url);
                 }
             } else {
                 showStreamError(data.message || 'Gagal mendapatkan URL stream');
             }
         })
-        .catch(err => {
-            showStreamError('Koneksi error: ' + err.message);
-        });
+        .catch(err => showStreamError('Koneksi error: ' + err.message));
+    }
+
+    function playEZOpen(url, accessToken, apiUrl) {
+        const cont = document.getElementById('detail-player');
+        cont.style.display = 'block';
+        document.getElementById('cctv-video').style.display = 'none';
+
+        const rect = document.getElementById('stream-container').getBoundingClientRect();
+        const w = Math.round(rect.width)  || 800;
+        const h = Math.round(rect.height) || 450;
+
+        const PlayerClass = (typeof EZUIKit === 'function') ? EZUIKit
+                          : (EZUIKit && EZUIKit.EZUIKitPlayer) ? EZUIKit.EZUIKitPlayer
+                          : null;
+        if (!PlayerClass) { showStreamError('EZUIKit SDK gagal dimuat'); return; }
+
+        try {
+            detailPlayer = new PlayerClass({
+                id: 'detail-player',
+                accessToken: accessToken,
+                url: url,
+                width:  w,
+                height: h,
+                scaleMode: 0,
+                audio: 0,
+                env: {
+                    domain: (apiUrl || 'https://isgpopen.ezvizlife.com').replace(/\/$/, '')
+                },
+                handleError: function(e) {
+                    const code = e && (e.retcode || e.nErrorCode || e.errorCode || '');
+                    showStreamError(code ? 'Player error [' + code + ']' : 'Gagal memutar stream');
+                }
+            });
+        } catch(e) {
+            showStreamError('EZUIKit error: ' + e.message);
+        }
     }
 
     function playHLS(url) {
         const video = document.getElementById('cctv-video');
         video.style.display = 'block';
-        document.getElementById('cctv-iframe').style.display = 'none';
+        video.style.height = '100%';
+        document.getElementById('detail-player').style.display = 'none';
 
-        if (Hls.isSupported()) {
-            const hls = new Hls();
+        if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+            const hls = new Hls({
+                enableWorker: true,
+                lowLatencyMode: true,
+                backBufferLength: 90,
+            });
             hls.loadSource(url);
             hls.attachMedia(video);
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                video.play();
+                video.play().catch(() => {});
             });
-            hls.on(Hls.Events.ERROR, (event, data) => {
-                if (data.fatal) showStreamError('HLS stream error');
+            hls.on(Hls.Events.ERROR, (ev, d) => {
+                if (d.fatal) {
+                    const detail = d.details || d.type || 'unknown';
+                    showStreamError('HLS error: ' + detail);
+                }
+            });
+            hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+                video.muted = true;
             });
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             video.src = url;
-            video.play();
+            video.play().catch(() => {});
         } else {
-            showStreamError('HLS tidak didukung browser ini');
+            showStreamError('HLS tidak didukung browser ini. Gunakan protokol EZOPEN.');
         }
-    }
-
-    function playEZOpen(url) {
-        document.getElementById('cctv-video').style.display = 'none';
-        const iframe = document.getElementById('cctv-iframe');
-        iframe.src = url;
-        iframe.style.display = 'block';
-    }
-
-    function playWithVideo(url) {
-        const video = document.getElementById('cctv-video');
-        video.src = url;
-        video.style.display = 'block';
-        document.getElementById('cctv-iframe').style.display = 'none';
-        video.play().catch(e => showStreamError('Gagal memutar video: ' + e.message));
     }
 
     function captureCCTV(cctvId) {
@@ -278,9 +316,10 @@
         .then(data => {
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-camera me-2"></i>Capture';
-            if (data.success && data.imageUrl) {
-                document.getElementById('capture-img').src = data.imageUrl;
-                document.getElementById('capture-download').href = data.imageUrl;
+            const imgUrl = data.imageUrl || data.pic_url;
+            if (data.success && imgUrl) {
+                document.getElementById('capture-img').src = imgUrl;
+                document.getElementById('capture-download').href = imgUrl;
                 document.getElementById('capture-result').style.display = 'block';
                 document.getElementById('capture-result').scrollIntoView({ behavior: 'smooth' });
             } else {

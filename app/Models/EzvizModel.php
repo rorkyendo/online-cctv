@@ -125,12 +125,15 @@ class EzvizModel
                 ];
             }
 
+            // HLS: force quality=2 (SD / H.264) — browsers cannot decode H.265 (quality=1/HD)
+            $hlsQuality = (strtolower($protocol) === 'hls') ? 2 : $quality;
+
             $response = Http::timeout(15)->asForm()->post($akun->api_url . '/api/lapp/live/address/get', [
                 'accessToken'  => $token,
                 'deviceSerial' => $cctv->device_serial,
                 'channelNo'    => $channelNo,
                 'protocol'     => $this->mapProtocol($protocol),
-                'quality'      => $quality,
+                'quality'      => $hlsQuality,
             ]);
 
             $result = $response->json();
