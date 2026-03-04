@@ -44,6 +44,11 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interactio
 # Copy full source
 COPY . .
 
+# Pastikan direktori cache ada dan writable sebelum post-install scripts
+RUN mkdir -p bootstrap/cache storage/framework/cache storage/framework/sessions \
+        storage/framework/views storage/logs \
+    && chmod -R 777 bootstrap/cache storage
+
 # Run post-install scripts
 RUN composer dump-autoload --optimize
 
