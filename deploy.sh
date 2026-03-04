@@ -162,7 +162,7 @@ cmd_deploy() {
     wait_healthy "$APP_CONTAINER"
 
     info "Setting storage permissions..."
-    $COMPOSE exec -T app chmod -R 775 storage bootstrap/cache
+    $COMPOSE exec -T app sh -c 'chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null' || warn "chmod gagal — entrypoint sudah handle, bisa diabaikan."
 
     info "Running migrations..."
     run_artisan migrate --force
@@ -387,7 +387,7 @@ cmd_rebuild() {
     wait_healthy "$APP_CONTAINER"
 
     info "Setting storage permissions..."
-    $COMPOSE exec -T app chmod -R 775 storage bootstrap/cache
+    $COMPOSE exec -T app sh -c 'chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null' || warn "chmod gagal — entrypoint sudah handle, bisa diabaikan."
 
     info "Running migrations..."
     run_artisan migrate --force

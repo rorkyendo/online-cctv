@@ -5,15 +5,34 @@
 # ============================================================
 set -e
 
+BASE=/var/www/html
+
+# ── Buat struktur storage jika kosong (named volume baru/empty) ──
+echo "[entrypoint] Ensuring storage structure exists..."
+mkdir -p \
+    "$BASE/storage/app/public" \
+    "$BASE/storage/framework/cache/data" \
+    "$BASE/storage/framework/sessions" \
+    "$BASE/storage/framework/testing" \
+    "$BASE/storage/framework/views" \
+    "$BASE/storage/logs" \
+    "$BASE/bootstrap/cache" \
+    "$BASE/public/assets/img/profil"
+
+# Buat .gitignore di storage/logs agar Laravel tidak error
+if [ ! -f "$BASE/storage/logs/.gitignore" ]; then
+    echo "*\n!.gitignore" > "$BASE/storage/logs/.gitignore"
+fi
+
 echo "[entrypoint] Fixing storage permissions..."
 chown -R www:www \
-    /var/www/html/storage \
-    /var/www/html/bootstrap/cache \
-    /var/www/html/public/assets/img/profil 2>/dev/null || true
+    "$BASE/storage" \
+    "$BASE/bootstrap/cache" \
+    "$BASE/public/assets/img/profil" 2>/dev/null || true
 
 chmod -R 775 \
-    /var/www/html/storage \
-    /var/www/html/bootstrap/cache 2>/dev/null || true
+    "$BASE/storage" \
+    "$BASE/bootstrap/cache" 2>/dev/null || true
 
 # Jalankan artisan optimize kalau APP_KEY sudah ada
 if [ -n "$APP_KEY" ]; then
