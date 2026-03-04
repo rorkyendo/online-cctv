@@ -53,6 +53,7 @@
                     <div class="d-flex gap-2">
                         <select id="stream-protocol" class="form-select form-select-sm w-auto">
                             <option value="ezopen" selected>EZOPEN</option>
+                            <option value="hls">HLS</option>
                         </select>
                     </div>
                 </div>
@@ -175,7 +176,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/ezuikit-js@0.3.0/ezuikit.js"></script>
+{{-- EZUIKit.js v8.x — WebAssembly decoder, no iframe, works on international servers --}}
+<script src="https://cdn.jsdelivr.net/npm/ezuikit-js@8.2.6/ezuikit.js"></script>
 <script>
     const csrfToken = '{{ csrf_token() }}';
     let detailPlayer = null;
@@ -239,8 +241,9 @@
         const w = Math.round(rect.width)  || 800;
         const h = Math.round(rect.height) || 450;
 
-        const PlayerClass = (typeof EZUIKit === 'function') ? EZUIKit
-                          : (EZUIKit && EZUIKit.EZUIKitPlayer) ? EZUIKit.EZUIKitPlayer
+        // v8.x UMD: EZUIKit.EZUIKitPlayer
+        const PlayerClass = (EZUIKit && EZUIKit.EZUIKitPlayer) ? EZUIKit.EZUIKitPlayer
+                          : (typeof EZUIKit === 'function') ? EZUIKit
                           : null;
         if (!PlayerClass) { showStreamError('EZUIKit SDK gagal dimuat'); return; }
 
@@ -253,8 +256,12 @@
                 height: h,
                 scaleMode: 0,
                 audio: 0,
+                language: 'en',
                 env: {
                     domain: (apiUrl || 'https://isgpopen.ezvizlife.com').replace(/\/$/, '')
+                },
+                handleSuccess: function() {
+                    document.getElementById('stream-loading').style.display = 'none';
                 },
                 handleError: function(e) {
                     const code = e && (e.retcode || e.nErrorCode || e.errorCode || '');

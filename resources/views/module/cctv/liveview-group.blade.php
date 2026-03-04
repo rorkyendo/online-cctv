@@ -196,6 +196,7 @@
         {{-- Protocol selector --}}
         <select id="globalProtocol" class="form-select form-select-sm w-auto" style="background:#2b2b3d;color:#fff;border-color:#3d3d5c;">
             <option value="ezopen" selected>EZOPEN</option>
+            <option value="hls">HLS</option>
         </select>
 
         {{-- Actions --}}
@@ -309,9 +310,9 @@
     </div>
 </div>
 
-{{-- EZUIKit.js — official EZVIZ web player SDK (UMD build) --}}
+{{-- EZUIKit.js v8.x — official EZVIZ web player SDK (WebAssembly decoder, no iframe) --}}
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/ezuikit-js@0.3.0/ezuikit.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ezuikit-js@8.2.6/ezuikit.js"></script>
 
 {{-- ──────────────────────────────────────────────── --}}
 <script>
@@ -376,7 +377,7 @@ async function loadStream(id, protocol) {
     }
 }
 
-// ── Play via EZUIKit.js ───────────────────────────
+// ── Play via EZUIKit.js v8.x (WebAssembly decoder) ─────
 function playEzopen(id, url, accessToken, apiUrl) {
     const container = document.getElementById('player-' + id);
     if (!container) return;
@@ -388,9 +389,9 @@ function playEzopen(id, url, accessToken, apiUrl) {
     const h = Math.round(rect.height) || 360;
 
     try {
-        // v8.x UMD exports as EZUIKit.EZUIKitPlayer
-        const PlayerClass = (typeof EZUIKit === 'function') ? EZUIKit
-                          : (EZUIKit && EZUIKit.EZUIKitPlayer) ? EZUIKit.EZUIKitPlayer
+        // v8.x UMD: EZUIKit.EZUIKitPlayer
+        const PlayerClass = (EZUIKit && EZUIKit.EZUIKitPlayer) ? EZUIKit.EZUIKitPlayer
+                          : (typeof EZUIKit === 'function') ? EZUIKit
                           : null;
         if (!PlayerClass) { setOverlay(id, 'error', 'EZUIKit SDK gagal dimuat'); return; }
 
@@ -402,6 +403,7 @@ function playEzopen(id, url, accessToken, apiUrl) {
             height: h,
             scaleMode: 0,
             audio: 0,
+            language: 'en',
             env: {
                 domain: (apiUrl || 'https://isgpopen.ezvizlife.com').replace(/\/$/, '')
             },
