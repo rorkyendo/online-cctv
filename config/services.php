@@ -35,4 +35,6 @@ return [
         ],
     ],
 
+    'ezviz_scraper_url' => env('EZVIZ_SCRAPER_URL', 'http://scraper:5055'),
+
 ];
