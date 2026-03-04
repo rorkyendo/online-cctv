@@ -311,7 +311,7 @@
 
 {{-- EZUIKit.js — official EZVIZ web player SDK (UMD build) --}}
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/ezuikit-js/ezuikit.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ezuikit-js@0.3.0/ezuikit.js"></script>
 
 {{-- ──────────────────────────────────────────────── --}}
 <script>
