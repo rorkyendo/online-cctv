@@ -2,13 +2,11 @@ services:
 
   # ──────────────────────────────────────────────────────────
   # 1. Laravel PHP-FPM App
+  #    Image dibangun manual: docker build -t cctv-app:latest .
+  #    (docker compose build di-bypass karena Compose 2.36+ Bake bug)
   # ──────────────────────────────────────────────────────────
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      # target: runtime  ← dihapus karena Compose 2.36+ (Bake) salah tafsir field ini.
-      # Stage terakhir di Dockerfile sudah "runtime", jadi otomatis dipakai.
+    image: cctv-app:latest
     container_name: cctv-app
     restart: unless-stopped
     env_file: .env
@@ -22,10 +20,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 20s
+      start_period: 30s
 
   # ──────────────────────────────────────────────────────────
   # 2. Nginx — reverse proxy ke PHP-FPM (app:9000)
+  #    aPanel (outer nginx) → port 8091 → container ini
   # ──────────────────────────────────────────────────────────
   nginx:
     image: nginx:1.27-alpine
@@ -33,7 +32,6 @@ services:
     restart: unless-stopped
     ports:
       - "8091:8091"
-      # - "443:443"    # aktifkan setelah SSL/certbot
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./public:/var/www/html/public:ro
@@ -51,22 +49,19 @@ services:
   # ──────────────────────────────────────────────────────────
   # 3. EZVIZ Scraper (Python / Selenium / Chrome)
   #    Hanya expose ke internal network — tidak ke publik
+  #    Image dibangun manual: docker build -f tools/Dockerfile -t cctv-scraper:latest .
   # ──────────────────────────────────────────────────────────
   scraper:
-    build:
-      context: .
-      dockerfile: tools/Dockerfile
+    image: cctv-scraper:latest
     container_name: cctv-scraper
     restart: unless-stopped
-    shm_size: '512mb'    # Chrome butuh /dev/shm cukup besar, default 64MB sering crash
-    # seccomp:unconfined diperlukan karena Docker default seccomp memblokir syscall
-    # yang dibutuhkan Chrome modern (clone3, dll) → menyebabkan "Chrome instance exited"
+    shm_size: '512mb'
     security_opt:
       - seccomp:unconfined
     environment:
       FLASK_HOST: "0.0.0.0"
       FLASK_PORT: "5055"
-      CHROME_BIN: "/usr/bin/google-chrome"
+      CHROME_BIN: "/usr/local/bin/google-chrome"
       CHROMEDRIVER_PATH: "/usr/local/bin/chromedriver"
       WDM_OFFLINE: "true"
     expose:

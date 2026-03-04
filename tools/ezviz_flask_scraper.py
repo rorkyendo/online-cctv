@@ -78,6 +78,7 @@ def make_driver():
     opts.add_argument("--no-zygote")
     opts.add_argument("--disable-setuid-sandbox")
     opts.add_argument("--disable-gpu-sandbox")    # disable GPU process sandbox
+    opts.add_argument("--disable-crash-reporter")  # disable crashpad handler
     opts.add_argument("--renderer-process-limit=2")
     opts.add_argument("--window-size=1280,900")
     opts.add_argument("--disable-blink-features=AutomationControlled")

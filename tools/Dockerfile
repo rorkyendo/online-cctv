@@ -103,9 +103,11 @@ RUN pip install --no-cache-dir \
 # Copy scraper script
 COPY tools/ezviz_flask_scraper.py .
 
-# Non-root user
-RUN groupadd -r scraper && useradd -r -g scraper -s /sbin/nologin scraper \
-    && chown -R scraper:scraper /app
+# Non-root user — Chrome butuh home dir yang writable
+RUN groupadd -r scraper \
+    && useradd -r -g scraper -m -d /home/scraper -s /bin/bash scraper \
+    && mkdir -p /home/scraper/.local/share/applications \
+    && chown -R scraper:scraper /app /home/scraper
 
 USER scraper
 

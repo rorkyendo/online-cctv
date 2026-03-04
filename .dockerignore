@@ -18,12 +18,8 @@ node_modules/
 tests/
 phpunit.xml
 
-# ── Logs & Cache (pakai volume) ───────────────────────────
-storage/logs/
-storage/framework/cache/
-storage/framework/sessions/
-storage/framework/views/
-bootstrap/cache/
+# ── Logs & Cache (pakai volume, dibuat entrypoint) ────────
+storage/logs/*.log
 *.log
 
 # ── Build artifacts ───────────────────────────────────────
@@ -32,6 +28,11 @@ public/build
 
 # ── Tools dev only ────────────────────────────────────────
 tools/fix_*.php
+
+# ── Docker files sendiri (tidak perlu di-copy ke image) ───
+docker-compose.yml
+deploy.sh
+.dockerignore
 
 # ── Misc ──────────────────────────────────────────────────
 *.md
