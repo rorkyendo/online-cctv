@@ -69,9 +69,16 @@ def make_driver():
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
     opts.add_argument("--disable-gpu")
+    opts.add_argument("--disable-software-rasterizer")
     opts.add_argument("--disable-extensions")
     opts.add_argument("--disable-infobars")
     opts.add_argument("--no-first-run")
+    # --no-zygote: hindari zygote process yang tidak kompatibel dengan beberapa kernel Docker
+    # JANGAN pakai --single-process bersama --no-zygote: menyebabkan crash di Chrome 120+
+    opts.add_argument("--no-zygote")
+    opts.add_argument("--disable-setuid-sandbox")
+    opts.add_argument("--disable-gpu-sandbox")    # disable GPU process sandbox
+    opts.add_argument("--renderer-process-limit=2")
     opts.add_argument("--window-size=1280,900")
     opts.add_argument("--disable-blink-features=AutomationControlled")
     opts.add_argument("--disable-popup-blocking")
@@ -91,7 +98,14 @@ def make_driver():
 
     if _CHROMEDRIVER_PATH is None:
         raise RuntimeError("ChromeDriver tidak tersedia. Periksa instalasi webdriver-manager.")
-    service = Service(_CHROMEDRIVER_PATH)
+
+    # Aktifkan verbose log ChromeDriver → /tmp/chromedriver.log
+    # Berisi output stderr Chrome (crash reason, missing libs, dll)
+    service = Service(
+        _CHROMEDRIVER_PATH,
+        log_output="/tmp/chromedriver.log",
+        service_args=["--verbose", "--append-log"],
+    )
     driver = webdriver.Chrome(service=service, options=opts)
     driver.set_page_load_timeout(30)  # eager: return setelah DOMContentLoaded, resource masih loading
 
@@ -489,6 +503,66 @@ def scrape_devices(email: str, password: str) -> dict:
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok", "service": "ezviz-scraper"}), 200
+
+
+@app.route("/debug-chrome", methods=["GET"])
+def debug_chrome():
+    """
+    Jalankan Chrome dengan --dump-dom lalu kembalikan hasilnya.
+    Berguna untuk memastikan Chrome bisa start di container.
+    Juga kembalikan isi /tmp/chromedriver.log (berisi crash reason).
+    """
+    import subprocess
+
+    # Baca ChromeDriver log jika ada
+    chromedriver_log = ""
+    try:
+        with open("/tmp/chromedriver.log", "r") as f:
+            chromedriver_log = f.read()[-3000:]  # 3000 karakter terakhir
+    except Exception as e:
+        chromedriver_log = f"(tidak ada log: {e})"
+
+    # Coba jalankan Chrome langsung (bukan via Selenium)
+    chrome_bin = CHROME_BIN or "google-chrome"
+    cmd = [
+        chrome_bin,
+        "--headless=new", "--no-sandbox", "--disable-dev-shm-usage",
+        "--disable-gpu", "--no-zygote", "--disable-setuid-sandbox",
+        "--dump-dom", "about:blank",
+    ]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+        chrome_stdout = proc.stdout[:500]
+        chrome_stderr = proc.stderr[:2000]
+        chrome_returncode = proc.returncode
+    except Exception as e:
+        chrome_stdout = ""
+        chrome_stderr = str(e)
+        chrome_returncode = -1
+
+    # Cek versi Chrome dan ChromeDriver
+    chrome_ver = ""
+    try:
+        r = subprocess.run([chrome_bin, "--version"], capture_output=True, text=True, timeout=5)
+        chrome_ver = r.stdout.strip() or r.stderr.strip()
+    except Exception as e:
+        chrome_ver = str(e)
+
+    driver_ver = ""
+    try:
+        r = subprocess.run([_CHROMEDRIVER_PATH or "chromedriver", "--version"], capture_output=True, text=True, timeout=5)
+        driver_ver = r.stdout.strip() or r.stderr.strip()
+    except Exception as e:
+        driver_ver = str(e)
+
+    return jsonify({
+        "chrome_version": chrome_ver,
+        "chromedriver_version": driver_ver,
+        "chrome_returncode": chrome_returncode,
+        "chrome_stderr": chrome_stderr,
+        "chrome_stdout_snippet": chrome_stdout,
+        "chromedriver_log_tail": chromedriver_log,
+    })
 
 
 @app.route("/debug-screenshot", methods=["GET"])

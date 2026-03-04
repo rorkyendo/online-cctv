@@ -57,6 +57,11 @@ services:
       dockerfile: tools/Dockerfile
     container_name: cctv-scraper
     restart: unless-stopped
+    shm_size: '512mb'    # Chrome butuh /dev/shm cukup besar, default 64MB sering crash
+    # seccomp:unconfined diperlukan karena Docker default seccomp memblokir syscall
+    # yang dibutuhkan Chrome modern (clone3, dll) → menyebabkan "Chrome instance exited"
+    security_opt:
+      - seccomp:unconfined
     environment:
       FLASK_HOST: "0.0.0.0"
       FLASK_PORT: "5055"
