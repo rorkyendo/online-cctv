@@ -13,6 +13,7 @@
 #   ./deploy.sh artisan <cmd> → jalankan artisan command
 #   ./deploy.sh stop       → stop tapi tidak hapus container
 #   ./deploy.sh down       → stop dan hapus container (volumes aman)
+#   ./deploy.sh rebuild    → hapus container + image lama, build ulang dari nol
 # ============================================================
 
 set -euo pipefail
@@ -280,6 +281,72 @@ cmd_down() {
 }
 
 # ══════════════════════════════════════════════════════════════
+# COMMAND: rebuild — hapus container + image, build ulang dari nol
+# ══════════════════════════════════════════════════════════════
+cmd_rebuild() {
+    header "REBUILD FROM SCRATCH"
+
+    warn "Perintah ini akan:"
+    warn "  1. Stop & hapus semua container (docker compose down)"
+    warn "  2. Hapus image lama yang dibangun project ini"
+    warn "  3. Build ulang semua image dari nol (--no-cache)"
+    warn "  4. Jalankan ulang semua container"
+    warn "  5. Jalankan migrate + cache Laravel"
+    warn ""
+    warn "CATATAN: Named volumes (data storage/foto) TIDAK akan dihapus."
+    warn "Gunakan flag --with-volumes untuk hapus volumes juga (DATA HILANG!)."
+    echo -e "${YELLOW}Tekan ENTER untuk lanjutkan, atau Ctrl+C untuk batal.${NC}"
+    read -r
+
+    local with_volumes="${1:-}"
+
+    info "Stopping & removing containers..."
+    if [[ "$with_volumes" == "--with-volumes" ]]; then
+        warn "Menghapus volumes juga! Semua data storage/foto akan hilang."
+        echo -e "${RED}Ketik 'HAPUS' untuk konfirmasi:${NC}"
+        read -r confirm
+        if [[ "$confirm" != "HAPUS" ]]; then
+            error "Konfirmasi tidak cocok. Rebuild dibatalkan."
+        fi
+        $COMPOSE down --volumes
+        success "Container + volumes dihapus."
+    else
+        $COMPOSE down
+        success "Container dihapus. Volumes tetap aman."
+    fi
+
+    info "Menghapus image lama project ini (jika ada)..."
+    docker images --format '{{.Repository}}:{{.Tag}}' \
+        | grep -E '^(online-cctv|cctv-)' \
+        | xargs -r docker rmi -f 2>/dev/null && success "Image lama dihapus." || info "Tidak ada image lama untuk dihapus."
+
+    info "Membersihkan dangling images..."
+    docker image prune -f 2>/dev/null || true
+
+    check_env
+
+    info "Building semua image dari nol (--no-cache)..."
+    $COMPOSE build --pull --no-cache
+
+    info "Starting containers..."
+    $COMPOSE up -d
+
+    wait_healthy "$APP_CONTAINER"
+
+    info "Setting storage permissions..."
+    $COMPOSE exec -T app chmod -R 775 storage bootstrap/cache
+
+    info "Running migrations..."
+    run_artisan migrate --force
+
+    cache_laravel
+
+    echo ""
+    success "Rebuild selesai!"
+    cmd_status
+}
+
+# ══════════════════════════════════════════════════════════════
 # COMMAND: help
 # ══════════════════════════════════════════════════════════════
 cmd_help() {
@@ -297,8 +364,8 @@ cmd_help() {
     echo "  shell               Masuk shell ke container app"
     echo "  artisan <cmd>       Jalankan php artisan di container app"
     echo "  stop                Stop container (data aman)"
-    echo "  down                Hapus container (data/volume tetap aman)"
-    echo "  help                Tampilkan bantuan ini"
+    echo "  down                Hapus container (data/volume tetap aman)"  echo "  rebuild             Hapus container+image, build ulang dari nol"
+  echo "  rebuild --with-volumes  Rebuild + hapus volumes (DATA HILANG!)"    echo "  help                Tampilkan bantuan ini"
     echo ""
     echo -e "${CYAN}Contoh:${NC}"
     echo "  ./deploy.sh                          # deploy pertama kali"
@@ -307,6 +374,8 @@ cmd_help() {
     echo "  ./deploy.sh artisan migrate:status   # cek status migrasi"
     echo "  ./deploy.sh artisan tinker           # buka tinker REPL"
     echo "  ./deploy.sh restart nginx            # reload nginx"
+  echo "  ./deploy.sh rebuild                  # hapus semua, build ulang"
+  echo "  ./deploy.sh rebuild --with-volumes   # rebuild + hapus data (hati-hati!)"
 }
 
 # ══════════════════════════════════════════════════════════════
@@ -330,6 +399,7 @@ case "$COMMAND" in
     artisan)  cmd_artisan "$@" ;;
     stop)     cmd_stop ;;
     down)     cmd_down ;;
+    rebuild)  cmd_rebuild "${1:-}" ;;
     help|--help|-h) cmd_help ;;
     *) error "Command tidak dikenal: '${COMMAND}'. Gunakan './deploy.sh help'." ;;
 esac

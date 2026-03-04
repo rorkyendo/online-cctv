@@ -64,35 +64,40 @@ RUN apk add --no-cache \
         libzip \
         oniguruma \
         icu-libs \
-        curl
+        curl \
+        su-exec
 
 # Copy compiled PHP extensions from builder
 COPY --from=builder /usr/local/lib/php/extensions /usr/local/lib/php/extensions
 COPY --from=builder /usr/local/etc/php/conf.d    /usr/local/etc/php/conf.d
 
 # PHP production config
-COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+COPY docker/php/opcache.ini  /usr/local/etc/php/conf.d/opcache.ini
 COPY docker/php/php-prod.ini /usr/local/etc/php/conf.d/php-prod.ini
+
+# PHP-FPM pool config (workers sebagai user www)
+COPY docker/php/www.conf /usr/local/etc/php-fpm.d/www.conf
 
 WORKDIR /var/www/html
 
 # Copy built app
 COPY --from=builder /var/www/html /var/www/html
 
-# Non-root user
+# Non-root user — container tetap root, FPM workers pakai www via pool config
 RUN addgroup -g 1000 www && adduser -u 1000 -G www -s /bin/sh -D www
 
-# Permissions
-RUN chown -R www:www storage bootstrap/cache \
-    && chmod -R 775 storage bootstrap/cache \
-    && mkdir -p public/assets/img/profil \
-    && chown -R www:www public/assets/img
+# Permissions awal (volume akan di-chown saat runtime oleh entrypoint)
+RUN mkdir -p public/assets/img/profil \
+    && chown -R www:www storage bootstrap/cache public/assets/img \
+    && chmod -R 775 storage bootstrap/cache
 
-USER www
+# Entrypoint script
+COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 9000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD php-fpm -t || exit 1
 
-CMD ["php-fpm"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

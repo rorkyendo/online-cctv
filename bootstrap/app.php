@@ -13,6 +13,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Percaya semua proxy (aPanel reverse proxy → Docker nginx → PHP-FPM)
+        // Tanpa ini, Laravel tidak tahu request aslinya HTTPS → asset URL jadi http://
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'auth'        => \App\Http\Middleware\CheckAuthenticated::class,
             'checkAccess' => \App\Http\Middleware\CheckAccess::class,
