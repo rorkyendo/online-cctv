@@ -33,11 +33,41 @@ COMPOSE="docker compose"
 APP_CONTAINER="cctv-app"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
+# Docker Compose 2.36+ menggunakan "docker buildx bake" secara default.
+# Bake salah menafsirkan field `build.target` (Dockerfile stage) di docker-compose.yml
+# sehingga stage "runtime" tidak ditemukan. Disable Bake agar pakai build klasik.
+export COMPOSE_BAKE=false
+
 # ── Pastikan dijalankan dari root project ─────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# ── Helper: cek .env ada ──────────────────────────────────────
+# ── Helper: fix CRLF → LF pada file kritis (Windows upload issue) ────
+fix_crlf() {
+    local files=(
+        Dockerfile
+        tools/Dockerfile
+        docker-compose.yml
+        deploy.sh
+    )
+    local fixed=0
+    # Selalu convert (tidak deteksi dulu) — tr lebih reliable dari grep -P
+    for f in "${files[@]}"; do
+        if [[ -f "$f" ]]; then
+            tr -d '\r' < "$f" > "${f}.crlf_tmp" && mv "${f}.crlf_tmp" "$f"
+            fixed=$((fixed+1))
+        fi
+    done
+    # docker/ subfolder
+    while IFS= read -r -d '' f; do
+        tr -d '\r' < "$f" > "${f}.crlf_tmp" && mv "${f}.crlf_tmp" "$f"
+        fixed=$((fixed+1))
+    done < <(find docker/ -type f -print0 2>/dev/null)
+
+    info "CRLF→LF normalisasi selesai pada $fixed file."
+}
+
+
 check_env() {
     if [[ ! -f ".env" ]]; then
         warn ".env tidak ditemukan."
@@ -109,10 +139,22 @@ wait_healthy() {
 cmd_deploy() {
     header "FULL DEPLOY"
 
+    fix_crlf
     check_env
 
-    info "Building images..."
-    $COMPOSE build --pull --no-cache
+    info "Pulling base images (php, nginx, python, composer)..."
+    # Pull secara eksplisit agar error network terlihat jelas,
+    # bukan dilaporkan sebagai 'stage not found' oleh BuildKit
+    docker pull php:8.2-fpm-alpine  || warn "Gagal pull php:8.2-fpm-alpine — akan pakai cache lokal jika ada"
+    docker pull composer:2.7        || warn "Gagal pull composer:2.7 — akan pakai cache lokal jika ada"
+    docker pull nginx:1.27-alpine   || warn "Gagal pull nginx:1.27-alpine — akan pakai cache lokal jika ada"
+    docker pull python:3.10-slim    || warn "Gagal pull python:3.10-slim — akan pakai cache lokal jika ada"
+
+    info "Building image app..."
+    $COMPOSE build --no-cache app
+
+    info "Building image scraper..."
+    $COMPOSE build --no-cache scraper
 
     info "Starting containers..."
     $COMPOSE up -d
@@ -286,6 +328,8 @@ cmd_down() {
 cmd_rebuild() {
     header "REBUILD FROM SCRATCH"
 
+    fix_crlf
+
     warn "Perintah ini akan:"
     warn "  1. Stop & hapus semua container (docker compose down)"
     warn "  2. Hapus image lama yang dibangun project ini"
@@ -325,8 +369,17 @@ cmd_rebuild() {
 
     check_env
 
-    info "Building semua image dari nol (--no-cache)..."
-    $COMPOSE build --pull --no-cache
+    info "Pulling base images (php, nginx, python, composer)..."
+    docker pull php:8.2-fpm-alpine  || warn "Gagal pull php:8.2-fpm-alpine — akan pakai cache lokal jika ada"
+    docker pull composer:2.7        || warn "Gagal pull composer:2.7 — akan pakai cache lokal jika ada"
+    docker pull nginx:1.27-alpine   || warn "Gagal pull nginx:1.27-alpine — akan pakai cache lokal jika ada"
+    docker pull python:3.10-slim    || warn "Gagal pull python:3.10-slim — akan pakai cache lokal jika ada"
+
+    info "Building image app (--no-cache)..."
+    $COMPOSE build --no-cache app
+
+    info "Building image scraper (--no-cache)..."
+    $COMPOSE build --no-cache scraper
 
     info "Starting containers..."
     $COMPOSE up -d
@@ -364,8 +417,10 @@ cmd_help() {
     echo "  shell               Masuk shell ke container app"
     echo "  artisan <cmd>       Jalankan php artisan di container app"
     echo "  stop                Stop container (data aman)"
-    echo "  down                Hapus container (data/volume tetap aman)"  echo "  rebuild             Hapus container+image, build ulang dari nol"
-  echo "  rebuild --with-volumes  Rebuild + hapus volumes (DATA HILANG!)"    echo "  help                Tampilkan bantuan ini"
+    echo "  down                Hapus container (data/volume tetap aman)"
+    echo "  rebuild             Hapus container+image, build ulang dari nol"
+    echo "  rebuild --with-volumes  Rebuild + hapus volumes (DATA HILANG!)"
+    echo "  help                Tampilkan bantuan ini"
     echo ""
     echo -e "${CYAN}Contoh:${NC}"
     echo "  ./deploy.sh                          # deploy pertama kali"
@@ -374,8 +429,8 @@ cmd_help() {
     echo "  ./deploy.sh artisan migrate:status   # cek status migrasi"
     echo "  ./deploy.sh artisan tinker           # buka tinker REPL"
     echo "  ./deploy.sh restart nginx            # reload nginx"
-  echo "  ./deploy.sh rebuild                  # hapus semua, build ulang"
-  echo "  ./deploy.sh rebuild --with-volumes   # rebuild + hapus data (hati-hati!)"
+    echo "  ./deploy.sh rebuild                  # hapus semua, build ulang"
+    echo "  ./deploy.sh rebuild --with-volumes   # rebuild + hapus data (hati-hati!)"
 }
 
 # ══════════════════════════════════════════════════════════════
