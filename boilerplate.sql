@@ -200,6 +200,7 @@ CREATE TABLE IF NOT EXISTS `cv_ezviz_akun` (
   `deskripsi` varchar(500) DEFAULT NULL,
   `email_terdaftar` varchar(150) DEFAULT NULL COMMENT 'Email / username untuk login ke Ezviz Console (isgpopen.ezviz.com)',
   `password_console` varchar(255) DEFAULT NULL COMMENT 'Password untuk login ke Ezviz Console, dipakai untuk auto-scraping AppKey',
+  `login_type` enum('ezviz','hikconnect') DEFAULT 'ezviz' COMMENT 'Tipe login: ezviz (standar) atau hikconnect (akun Hik-Connect)',
   `app_key` varchar(100) DEFAULT NULL COMMENT 'AppKey dari EZVIZ Open Platform (bisa diisi manual atau scraping otomatis)',
   `app_secret` varchar(255) DEFAULT NULL COMMENT 'Secret dari EZVIZ Open Platform (bisa diisi manual atau scraping otomatis)',
   `access_token` text DEFAULT NULL COMMENT 'Auto-retrieved via API',
@@ -215,6 +216,7 @@ CREATE TABLE IF NOT EXISTS `cv_ezviz_akun` (
 -- SQL untuk ALTER TABLE jika tabel sudah ada:
 -- ALTER TABLE `cv_ezviz_akun`
 --   ADD COLUMN `password_console` varchar(255) DEFAULT NULL COMMENT 'Password login Ezviz Console' AFTER `email_terdaftar`,
+--   ADD COLUMN `login_type` enum('ezviz','hikconnect') DEFAULT 'ezviz' COMMENT 'Tipe login: ezviz atau hikconnect' AFTER `password_console`,
 --   ADD COLUMN `last_scrape` datetime DEFAULT NULL AFTER `last_sync`,
 --   MODIFY COLUMN `app_key` varchar(100) DEFAULT NULL,
 --   MODIFY COLUMN `app_secret` varchar(255) DEFAULT NULL;

@@ -17,9 +17,10 @@ from webdriver_manager.chrome import ChromeDriverManager
 # ============================================================
 # Konfigurasi
 # ============================================================
-LOGIN_URL  = "https://isgpopen.ezviz.com/console/login.html"
-APPKEY_URL = "https://isgpopen.ezviz.com/console/appkey.html"
-DEVICE_URL = "https://isgpopen.ezviz.com/console/device.html"
+LOGIN_URL     = "https://isgpopen.ezviz.com/console/login.html"
+HC_LOGIN_URL  = "https://isgpopen.ezviz.com/console/hcLogin.html"  # Hik-Connect accounts
+APPKEY_URL    = "https://isgpopen.ezviz.com/console/appkey.html"
+DEVICE_URL    = "https://isgpopen.ezviz.com/console/device.html"
 FLASK_PORT = int(os.environ.get("FLASK_PORT", 5055))
 FLASK_HOST = os.environ.get("FLASK_HOST", "127.0.0.1")
 CHROME_BIN  = os.environ.get("CHROME_BIN", "")  # e.g. /usr/bin/google-chrome in container
@@ -156,9 +157,19 @@ def wait_body_text(driver, keyword, timeout=45):
 # Helper: Login ke EZVIZ portal
 # Returns (True, None) jika berhasil, atau (False, pesan_error)
 # ============================================================
-def do_login(driver, email: str, password: str):
+def do_login(driver, email: str, password: str, login_type: str = "ezviz"):
+    """
+    Login ke EZVIZ portal.
+    login_type: "ezviz" (default) atau "hikconnect" (akun Hik-Connect).
+    Returns (True, None) jika berhasil, atau (False, pesan_error).
+    """
+    is_hc = login_type == "hikconnect"
+    target_url = HC_LOGIN_URL if is_hc else LOGIN_URL
+    login_label = "Hik-Connect" if is_hc else "EZVIZ"
+    print(f"[LOGIN] Tipe login: {login_label} → {target_url}")
+
     try:
-        driver.get(LOGIN_URL)
+        driver.get(target_url)
     except TimeoutException:
         pass  # DOM sudah ada, resource eksternal (analytics dll) timeout — lanjutkan
     # eager sudah tunggu DOM; beri waktu React mount komponen login
@@ -186,27 +197,141 @@ def do_login(driver, email: str, password: str):
         except Exception:
             pass
 
-    email_input = wait_spa(driver, "#register_email", timeout=20)
-    time.sleep(0.5)
+    # ── Hik-Connect login page punya selector berbeda ──
+    if is_hc:
+        # hcLogin.html menggunakan form field Hik-Connect
+        # Coba beberapa selector yang umum di halaman hcLogin
+        email_selectors = [
+            "#register_email",
+            "input[name='account']",
+            "input[name='email']",
+            "input[placeholder*='email' i]",
+            "input[placeholder*='account' i]",
+            "input[type='text']",
+            "input[type='email']",
+        ]
+        email_input = None
+        for sel in email_selectors:
+            try:
+                el = wait_spa(driver, sel, timeout=5)
+                if el:
+                    email_input = el
+                    print(f"[LOGIN-HC] Email field ditemukan: {sel}")
+                    break
+            except (TimeoutException, NoSuchElementException):
+                continue
 
-    email_input.clear()
-    email_input.send_keys(email)
+        if not email_input:
+            # Fallback: cari semua input lalu ambil yang pertama visible
+            try:
+                inputs = driver.find_elements(By.CSS_SELECTOR, "input")
+                for inp in inputs:
+                    if inp.is_displayed() and inp.get_attribute("type") in ("text", "email", ""):
+                        email_input = inp
+                        print(f"[LOGIN-HC] Email field (fallback): {inp.get_attribute('id') or inp.get_attribute('name')}")
+                        break
+            except Exception:
+                pass
 
-    pass_input = driver.find_element(By.CSS_SELECTOR, "#register_password")
-    pass_input.clear()
-    pass_input.send_keys(password)
+        if not email_input:
+            try:
+                ss_path = os.path.join(os.path.dirname(__file__), "debug_hclogin_page.png")
+                driver.save_screenshot(ss_path)
+                print(f"[DEBUG] hcLogin email field tidak ditemukan — screenshot: {ss_path}")
+            except Exception:
+                pass
+            return False, "Form login Hik-Connect tidak ditemukan. Halaman mungkin berubah."
 
-    checkbox = driver.find_element(By.CSS_SELECTOR, "#register_agreement")
-    if not checkbox.is_selected():
-        driver.execute_script("arguments[0].click();", checkbox)
+        time.sleep(0.5)
+        email_input.clear()
+        email_input.send_keys(email)
 
-    time.sleep(0.5)
+        # Cari password field
+        pass_selectors = [
+            "#register_password",
+            "input[name='password']",
+            "input[type='password']",
+        ]
+        pass_input = None
+        for sel in pass_selectors:
+            try:
+                el = driver.find_element(By.CSS_SELECTOR, sel)
+                if el.is_displayed():
+                    pass_input = el
+                    break
+            except NoSuchElementException:
+                continue
 
-    sign_btn = driver.find_element(By.CSS_SELECTOR, "button.buttonOne")
-    driver.execute_script("arguments[0].click();", sign_btn)
-    time.sleep(5)
+        if not pass_input:
+            return False, "Password field di form Hik-Connect tidak ditemukan."
 
-    if "login.html" in driver.current_url:
+        pass_input.clear()
+        pass_input.send_keys(password)
+
+        # Centang agreement checkbox jika ada
+        for chk_sel in ["#register_agreement", "input[type='checkbox']"]:
+            try:
+                checkbox = driver.find_element(By.CSS_SELECTOR, chk_sel)
+                if not checkbox.is_selected():
+                    driver.execute_script("arguments[0].click();", checkbox)
+                break
+            except NoSuchElementException:
+                continue
+
+        time.sleep(0.5)
+
+        # Cari tombol login/sign in
+        sign_btn = None
+        for btn_sel in ["button.buttonOne", "button[type='submit']", "button.ant-btn-primary"]:
+            try:
+                el = driver.find_element(By.CSS_SELECTOR, btn_sel)
+                if el.is_displayed():
+                    sign_btn = el
+                    break
+            except NoSuchElementException:
+                continue
+
+        if not sign_btn:
+            # Fallback: cari button apapun yang visible
+            try:
+                btns = driver.find_elements(By.CSS_SELECTOR, "button")
+                for b in btns:
+                    if b.is_displayed() and b.text.strip():
+                        sign_btn = b
+                        break
+            except Exception:
+                pass
+
+        if not sign_btn:
+            return False, "Tombol login Hik-Connect tidak ditemukan."
+
+        driver.execute_script("arguments[0].click();", sign_btn)
+        time.sleep(5)
+
+    else:
+        # ── Login EZVIZ standar ──
+        email_input = wait_spa(driver, "#register_email", timeout=20)
+        time.sleep(0.5)
+
+        email_input.clear()
+        email_input.send_keys(email)
+
+        pass_input = driver.find_element(By.CSS_SELECTOR, "#register_password")
+        pass_input.clear()
+        pass_input.send_keys(password)
+
+        checkbox = driver.find_element(By.CSS_SELECTOR, "#register_agreement")
+        if not checkbox.is_selected():
+            driver.execute_script("arguments[0].click();", checkbox)
+
+        time.sleep(0.5)
+
+        sign_btn = driver.find_element(By.CSS_SELECTOR, "button.buttonOne")
+        driver.execute_script("arguments[0].click();", sign_btn)
+        time.sleep(5)
+
+    # ── Cek apakah masih di halaman login ──
+    if "login.html" in driver.current_url or "hcLogin.html" in driver.current_url:
         # Simpan screenshot + page source untuk diagnosis
         try:
             ss_path = os.path.join(os.path.dirname(__file__), "debug_login_fail.png")
@@ -224,7 +349,7 @@ def do_login(driver, email: str, password: str):
             )
             err_msg = err_el.text.strip()
         except NoSuchElementException:
-            err_msg = "Login gagal. Cek kembali email dan password."
+            err_msg = f"Login {login_label} gagal. Cek kembali email dan password."
         return False, err_msg
 
     return True, None
@@ -233,10 +358,10 @@ def do_login(driver, email: str, password: str):
 # ============================================================
 # Core: Scrape AppKey + Secret
 # ============================================================
-def scrape_ezviz(email: str, password: str) -> dict:
+def scrape_ezviz(email: str, password: str, login_type: str = "ezviz") -> dict:
     driver = make_driver()
     try:
-        ok, err = do_login(driver, email, password)
+        ok, err = do_login(driver, email, password, login_type)
         if not ok:
             return {"success": False, "message": err}
 
@@ -418,10 +543,10 @@ def scrape_ezviz(email: str, password: str) -> dict:
 # ============================================================
 # Core: Scrape Device List
 # ============================================================
-def scrape_devices(email: str, password: str) -> dict:
+def scrape_devices(email: str, password: str, login_type: str = "ezviz") -> dict:
     driver = make_driver()
     try:
-        ok, err = do_login(driver, email, password)
+        ok, err = do_login(driver, email, password, login_type)
         if not ok:
             return {"success": False, "message": err}
 
@@ -454,28 +579,44 @@ def scrape_devices(email: str, password: str) -> dict:
             if len(cells) < 4:
                 continue
 
-            serial      = cells[0].text.strip()
+            # Serial bisa mengandung badge (NVR/IPC/dll) di bawah serial number
+            # Ambil baris pertama saja sebagai serial, dan sisanya sebagai device_type
+            serial_raw  = cells[0].text.strip()
+            serial_lines = serial_raw.split("\n")
+            serial      = serial_lines[0].strip()
+            device_type = serial_lines[1].strip() if len(serial_lines) > 1 else ""
+
             name        = cells[1].text.strip().rstrip("\u270f").strip()   # buang ikon edit
+            # Buang karakter non-ascii (ikon edit ✏) dari nama
+            name        = re.sub(r'[✏\u270f\u270e]', '', name).strip()
             adding_time = cells[2].text.strip()
             status_raw  = cells[3].text.strip()
             channel_no  = cells[4].text.strip() if len(cells) >= 5 else "1"
 
             # Validasi serial (huruf kapital + angka, 6-20 karakter)
             if not serial or not re.match(r'^[A-Z0-9]{6,20}$', serial):
-                continue
+                # Fallback: coba extract serial dari teks mentah cell
+                m_serial = re.search(r'[A-Z0-9]{6,20}', serial_raw)
+                if m_serial:
+                    serial = m_serial.group(0)
+                else:
+                    print(f"[SCRAPER] Skip row — serial tidak valid: {serial_raw[:50]}")
+                    continue
 
             # Normalkan status
             status = "online" if "online" in status_raw.lower() else "offline"
 
-            # Channel number
+            # Channel number — bisa "-" untuk NVR, atau angka
             try:
-                ch = int(re.search(r'\d+', channel_no).group())
+                m_ch = re.search(r'\d+', channel_no)
+                ch = int(m_ch.group()) if m_ch else 1
             except Exception:
                 ch = 1
 
             devices.append({
                 "serial":       serial,
                 "name":         name,
+                "device_type":  device_type,  # NVR, IPC, dll (dari badge di portal)
                 "adding_time":  adding_time,
                 "status":       status,
                 "channel_no":   ch,
@@ -612,8 +753,12 @@ def debug_screenshot():
 @app.route("/scrape", methods=["POST"])
 def scrape():
     data = request.get_json(force=True, silent=True) or {}
-    email    = data.get("email", "").strip()
-    password = data.get("password", "").strip()
+    email      = data.get("email", "").strip()
+    password   = data.get("password", "").strip()
+    login_type = data.get("login_type", "ezviz").strip()
+
+    if login_type not in ("ezviz", "hikconnect"):
+        login_type = "ezviz"
 
     if not email or not password:
         return jsonify({"success": False, "message": "email dan password wajib diisi"}), 400
@@ -625,7 +770,7 @@ def scrape():
     try:
         # Hard timeout 90s — jika Chrome hang, return error tanpa menunggu thread
         ex = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        future = ex.submit(scrape_ezviz, email, password)
+        future = ex.submit(scrape_ezviz, email, password, login_type)
         ex.shutdown(wait=False)  # jangan block saat thread masih jalan
         try:
             result = future.result(timeout=90)
@@ -639,9 +784,13 @@ def scrape():
 
 @app.route("/scrape-devices", methods=["POST"])
 def scrape_devices_route():
-    data     = request.get_json(force=True, silent=True) or {}
-    email    = data.get("email", "").strip()
-    password = data.get("password", "").strip()
+    data       = request.get_json(force=True, silent=True) or {}
+    email      = data.get("email", "").strip()
+    password   = data.get("password", "").strip()
+    login_type = data.get("login_type", "ezviz").strip()
+
+    if login_type not in ("ezviz", "hikconnect"):
+        login_type = "ezviz"
 
     if not email or not password:
         return jsonify({"success": False, "message": "email dan password wajib diisi"}), 400
@@ -651,7 +800,7 @@ def scrape_devices_route():
         return jsonify({"success": False, "message": "Scraper sedang sibuk memproses permintaan lain. Coba lagi dalam 30 detik."}), 503
     try:
         ex = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        future = ex.submit(scrape_devices, email, password)
+        future = ex.submit(scrape_devices, email, password, login_type)
         ex.shutdown(wait=False)
         try:
             result = future.result(timeout=90)

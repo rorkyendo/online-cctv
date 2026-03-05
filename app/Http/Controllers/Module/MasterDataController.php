@@ -284,7 +284,7 @@ class MasterDataController extends Controller
         $data['title'] = 'Akun Ezviz';
         $data['content'] = 'module.masterdata.ezvizAkun.data';
         $data['ezvizAkunList'] = DB::table('cv_ezviz_akun')
-            ->select('id_ezviz_akun', 'nama_akun', 'email_terdaftar', 'app_key', 'api_url', 'status', 'last_sync', 'token_expiry', 'access_token', 'created_time', 'password_console')
+            ->select('id_ezviz_akun', 'nama_akun', 'email_terdaftar', 'app_key', 'api_url', 'login_type', 'status', 'last_sync', 'token_expiry', 'access_token', 'created_time', 'password_console')
             ->orderBy('nama_akun')
             ->get();
         // Lokasi untuk form import device
@@ -320,6 +320,7 @@ class MasterDataController extends Controller
                 'app_key' => $request->app_key ?: null,
                 'app_secret' => $request->app_secret ?: null,
                 'api_url' => $request->api_url ?? 'https://isgpopen.ezvizlife.com',
+                'login_type' => in_array($request->login_type, ['ezviz', 'hikconnect']) ? $request->login_type : 'ezviz',
                 'status' => $request->status ?? 'aktif',
                 'created_time' => date('Y-m-d H:i:s'),
             ]);
@@ -365,8 +366,13 @@ class MasterDataController extends Controller
     public function scrapeEzvizAppKey(Request $request)
     {
         set_time_limit(0); // Scraping bisa makan waktu 60-90s, bebaskan limit PHP
-        $email    = trim($request->input('email', ''));
-        $password = trim($request->input('password', ''));
+        $email      = trim($request->input('email', ''));
+        $password   = trim($request->input('password', ''));
+        $loginType  = trim($request->input('login_type', 'ezviz'));
+
+        if (!in_array($loginType, ['ezviz', 'hikconnect'])) {
+            $loginType = 'ezviz';
+        }
 
         if (!$email || !$password) {
             return response()->json(['success' => false, 'message' => 'Email dan password wajib diisi.'], 422);
@@ -376,8 +382,9 @@ class MasterDataController extends Controller
 
         try {
             $response = Http::timeout(180)->post($flaskUrl . '/scrape', [
-                'email'    => $email,
-                'password' => $password,
+                'email'      => $email,
+                'password'   => $password,
+                'login_type' => $loginType,
             ]);
 
             if (!$response->successful()) {
@@ -456,6 +463,7 @@ class MasterDataController extends Controller
                 'email_terdaftar' => $request->email_terdaftar,
                 'app_key' => $request->app_key ?: null,
                 'api_url' => $request->api_url ?? 'https://isgpopen.ezvizlife.com',
+                'login_type' => in_array($request->login_type, ['ezviz', 'hikconnect']) ? $request->login_type : 'ezviz',
                 'status' => $request->status ?? 'aktif',
             ];
 
@@ -562,12 +570,15 @@ class MasterDataController extends Controller
             return response()->json(['success' => false, 'message' => 'Gagal mendekripsi password. Coba simpan ulang akun.'], 500);
         }
 
+        $loginType = $akun->login_type ?? 'ezviz';
+
         $flaskUrl = config('services.ezviz_scraper_url', 'http://127.0.0.1:5055');
 
         try {
             $response = Http::timeout(180)->post($flaskUrl . '/scrape-devices', [
-                'email'    => $email,
-                'password' => $password,
+                'email'      => $email,
+                'password'   => $password,
+                'login_type' => $loginType,
             ]);
 
             if (!$response->successful()) {

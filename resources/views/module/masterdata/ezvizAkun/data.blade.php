@@ -23,6 +23,11 @@
                     <div>
                         <h5 class="fw-bold mb-0">{{ $akun->nama_akun }}</h5>
                         <span class="text-muted fs-7">{{ $akun->api_url ?? 'https://open.ys7.com' }}</span>
+                        @if(($akun->login_type ?? 'ezviz') === 'hikconnect')
+                            <span class="badge badge-light-info ms-2 fs-9">
+                                <i class="bi bi-shield-lock me-1"></i>Hik-Connect
+                            </span>
+                        @endif
                     </div>
                 </div>
                 <div class="d-flex flex-stack mb-3">

@@ -13,7 +13,25 @@
                 lalu klik tombol <strong>"Ambil AppKey"</strong>. Sistem akan otomatis login ke
                 <a href="https://isgpopen.ezviz.com" target="_blank">isgpopen.ezviz.com</a> dan mengisi
                 <strong>AppKey</strong> &amp; <strong>Secret</strong> di form bawah secara otomatis.
-                <br><small class="text-muted">Proses ini membutuhkan waktu ~30 detik.</small>
+                <br><small class="text-muted">Proses ini membutuhkan waktu ~30 detik. Pilih tipe login sesuai akun Anda.</small>
+            </div>
+        </div>
+
+        {{-- Tipe Login --}}
+        <div class="mb-4">
+            <label class="form-label fw-semibold d-block">Tipe Login Akun</label>
+            <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="scrape_login_type" id="loginTypeEzviz" value="ezviz" checked>
+                <label class="btn btn-outline-primary" for="loginTypeEzviz">
+                    <i class="bi bi-camera-video me-1"></i> EZVIZ
+                </label>
+                <input type="radio" class="btn-check" name="scrape_login_type" id="loginTypeHikconnect" value="hikconnect">
+                <label class="btn btn-outline-info" for="loginTypeHikconnect">
+                    <i class="bi bi-shield-lock me-1"></i> Hik-Connect
+                </label>
+            </div>
+            <div class="form-text text-muted mt-1">
+                Pilih <strong>Hik-Connect</strong> jika akun terdaftar melalui aplikasi Hik-Connect / Hikvision.
             </div>
         </div>
 
@@ -145,6 +163,16 @@
                         </div>
                     </div>
                     <div class="mb-5">
+                        <label class="form-label fw-semibold">Tipe Login</label>
+                        <select name="login_type" id="field_login_type" class="form-select">
+                            <option value="ezviz" {{ old('login_type') === 'hikconnect' ? '' : 'selected' }}>EZVIZ</option>
+                            <option value="hikconnect" {{ old('login_type') === 'hikconnect' ? 'selected' : '' }}>Hik-Connect</option>
+                        </select>
+                        <div class="form-text text-muted">
+                            Pilih <strong>Hik-Connect</strong> jika akun terdaftar melalui aplikasi Hik-Connect / Hikvision.
+                        </div>
+                    </div>
+                    <div class="mb-5">
                         <label class="form-label fw-semibold">Keterangan</label>
                         <textarea name="deskripsi" class="form-control" rows="3"
                             placeholder="Catatan tentang akun ini">{{ old('deskripsi') }}</textarea>
@@ -209,9 +237,18 @@
         togglePassword('toggleSecret', 'field_app_secret');
 
         // ── Tombol Ambil AppKey ──────────────────────────────────
+        // Sync radio button tipe login (scraping panel) → form select
+        document.querySelectorAll('input[name="scrape_login_type"]').forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                const sel = document.getElementById('field_login_type');
+                if (sel) sel.value = this.value;
+            });
+        });
+
         document.getElementById('btnScrape').addEventListener('click', async function () {
             const email = document.getElementById('scrape_email').value.trim();
             const password = document.getElementById('scrape_password').value.trim();
+            const loginType = document.querySelector('input[name="scrape_login_type"]:checked')?.value || 'ezviz';
 
             if (!email || !password) {
                 alert('Masukkan email dan password Ezviz Console terlebih dahulu.');
@@ -234,7 +271,7 @@
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
                     },
-                    body: JSON.stringify({ email, password }),
+                    body: JSON.stringify({ email, password, login_type: loginType }),
                 });
 
                 const result = await response.json();
