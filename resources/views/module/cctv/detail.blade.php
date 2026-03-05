@@ -221,7 +221,7 @@
             document.getElementById('stream-loading').style.display = 'none';
             if (data.success && data.url) {
                 if (data.url.startsWith('ezopen://') || protocol === 'ezopen') {
-                    playEZOpen(data.url, data.access_token, data.api_url);
+                    playEZOpen(data.url, data.access_token, data.api_url, data.validCode);
                 } else {
                     playHLS(data.url);
                 }
@@ -232,7 +232,7 @@
         .catch(err => showStreamError('Koneksi error: ' + err.message));
     }
 
-    function playEZOpen(url, accessToken, apiUrl) {
+    function playEZOpen(url, accessToken, apiUrl, validCode) {
         const cont = document.getElementById('detail-player');
         cont.style.display = 'block';
         document.getElementById('cctv-video').style.display = 'none';
@@ -252,6 +252,7 @@
                 id: 'detail-player',
                 accessToken: accessToken,
                 url: url,
+                code: validCode || undefined,
                 width:  w,
                 height: h,
                 scaleMode: 0,

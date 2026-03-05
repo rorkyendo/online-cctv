@@ -363,8 +363,8 @@ async function loadStream(id, protocol) {
 
         if (data.success && data.url) {
             if (data.url.startsWith('ezopen://') || protocol === 'ezopen') {
-                streamCache[id] = { url: data.url, accessToken: data.access_token, apiUrl: data.api_url, protocol: 'ezopen' };
-                playEzopen(id, data.url, data.access_token, data.api_url);
+                streamCache[id] = { url: data.url, accessToken: data.access_token, apiUrl: data.api_url, validCode: data.validCode || '', protocol: 'ezopen' };
+                playEzopen(id, data.url, data.access_token, data.api_url, data.validCode);
             } else {
                 streamCache[id] = { url: data.url, protocol };
                 playHls(id, data.url);
@@ -378,7 +378,7 @@ async function loadStream(id, protocol) {
 }
 
 // ── Play via EZUIKit.js v8.x (WebAssembly decoder) ─────
-function playEzopen(id, url, accessToken, apiUrl) {
+function playEzopen(id, url, accessToken, apiUrl, validCode) {
     const container = document.getElementById('player-' + id);
     if (!container) return;
 
@@ -399,6 +399,7 @@ function playEzopen(id, url, accessToken, apiUrl) {
             id: 'player-' + id,
             accessToken: accessToken,
             url: url,
+            code: validCode || undefined,
             width:  w,
             height: h,
             scaleMode: 0,
@@ -494,7 +495,7 @@ function resizePlayer(id) {
     // Destroy and reinit with fresh pixel dimensions
     destroyPlayer(id);
     if (cache.protocol === 'ezopen') {
-        playEzopen(id, cache.url, cache.accessToken, cache.apiUrl);
+        playEzopen(id, cache.url, cache.accessToken, cache.apiUrl, cache.validCode);
     } else {
         playHls(id, cache.url);
     }

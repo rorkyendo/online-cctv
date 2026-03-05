@@ -122,6 +122,7 @@ class EzvizModel
                     'url'          => "ezopen://open.ezviz.com/{$cctv->device_serial}/{$channelNo}{$suffix}",
                     'access_token' => $token,
                     'api_url'      => $akun->api_url ?? 'https://isgpopen.ezvizlife.com',
+                    'validCode'    => $cctv->validCode ?? null,
                 ];
             }
 
