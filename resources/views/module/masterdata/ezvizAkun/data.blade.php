@@ -380,18 +380,33 @@ function renderDeviceTable(devices, total) {
                 ? '<span class="badge badge-light-success"><i class="bi bi-circle-fill me-1 fs-9"></i>Online</span>'
                 : '<span class="badge badge-light-secondary"><i class="bi bi-circle me-1 fs-9"></i>Offline</span>';
 
+            // Unique key: serial + channel (karena NVR punya banyak channel dengan serial yang sama)
+            const rowKey = dev.serial + '-ch' + dev.channel_no;
+
             const action = dev.already_added
                 ? '<span class="badge badge-light-success"><i class="bi bi-check-circle me-1"></i>Sudah ditambahkan</span>'
                 : `<button class="btn btn-sm btn-success" onclick="openImportForm('${dev.serial}','${(dev.name||'').replace(/'/g,"\\'")}',${dev.channel_no},'${dev.status}')"><i class="bi bi-plus me-1"></i>Tambah</button>`;
 
+            // Badge tipe device
+            const typeBadge = dev.device_type
+                ? (dev.device_type === 'NVR-CH'
+                    ? '<span class="badge badge-light-primary ms-1 fs-9">CH</span>'
+                    : '<span class="badge badge-light-warning ms-1 fs-9">' + dev.device_type + '</span>')
+                : '';
+
+            // Info nama: jika NVR channel, tampilkan parent name
+            const nameDisplay = dev.parent_name
+                ? `${dev.name || '-'} <small class="text-muted d-block">${dev.parent_name}</small>`
+                : (dev.name || '-');
+
             tbody.innerHTML += `
-                <tr id="row-${dev.serial}"${dev.already_added ? ' class="table-light"' : ''}>
-                    <td><span class="font-monospace fw-bold text-dark">${dev.serial}</span></td>
-                    <td>${dev.name || '-'}</td>
+                <tr id="row-${rowKey}"${dev.already_added ? ' class="table-light"' : ''}>
+                    <td><span class="font-monospace fw-bold text-dark">${dev.serial}</span>${typeBadge}</td>
+                    <td>${nameDisplay}</td>
                     <td>${badge}</td>
                     <td>${dev.channel_no}</td>
                     <td class="text-muted fs-7">${dev.adding_time || '-'}</td>
-                    <td class="text-end" id="action-${dev.serial}">${action}</td>
+                    <td class="text-end" id="action-${rowKey}">${action}</td>
                 </tr>`;
         });
     }

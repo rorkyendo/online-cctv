@@ -590,16 +590,18 @@ class MasterDataController extends Controller
 
             $result = $response->json();
 
-            // Tandai device yang sudah ada di sistem
+            // Tandai device yang sudah ada di sistem (cek serial + channel_no untuk NVR)
             if (!empty($result['devices'])) {
-                $existingSerials = DB::table('cv_cctv')
+                $existingDevices = DB::table('cv_cctv')
                     ->where('id_ezviz_akun', $idAkun)
-                    ->pluck('device_serial')
-                    ->map(fn($s) => strtoupper($s))
+                    ->select('device_serial', 'channel_no')
+                    ->get()
+                    ->map(fn($d) => strtoupper($d->device_serial) . '-' . intval($d->channel_no))
                     ->toArray();
 
-                $result['devices'] = array_map(function ($device) use ($existingSerials) {
-                    $device['already_added'] = in_array(strtoupper($device['serial']), $existingSerials);
+                $result['devices'] = array_map(function ($device) use ($existingDevices) {
+                    $key = strtoupper($device['serial']) . '-' . intval($device['channel_no'] ?? 1);
+                    $device['already_added'] = in_array($key, $existingDevices);
                     return $device;
                 }, $result['devices']);
             }

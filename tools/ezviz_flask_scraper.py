@@ -572,61 +572,129 @@ def scrape_devices(email: str, password: str, login_type: str = "ezviz") -> dict
                 "debug": body_text[:500]
             }
 
-        rows = driver.find_elements(By.CSS_SELECTOR, "table tbody tr")
+        # ── STEP 1: Klik semua "open channel" untuk expand NVR channels ──
+        # NVR device punya link "open channel" yang memunculkan sub-tabel channel
+        try:
+            open_ch_links = driver.find_elements(
+                By.XPATH,
+                "//a[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'open channel')]"
+            )
+            print(f"[SCRAPER] Ditemukan {len(open_ch_links)} NVR dengan 'open channel' link")
+            for link in open_ch_links:
+                try:
+                    driver.execute_script("arguments[0].scrollIntoView({block:'center'});", link)
+                    time.sleep(0.3)
+                    driver.execute_script("arguments[0].click();", link)
+                    time.sleep(1.5)  # beri waktu sub-tabel channel muncul
+                except Exception as _e_click:
+                    print(f"[SCRAPER] Gagal klik open channel: {_e_click}")
+        except Exception as _e_expand:
+            print(f"[SCRAPER] Error saat expand NVR channels: {_e_expand}")
 
-        for row in rows:
+        time.sleep(1)
+
+        # ── STEP 2: Re-fetch semua rows (termasuk channel rows yang baru muncul) ──
+        all_rows = driver.find_elements(By.CSS_SELECTOR, "table tbody tr")
+        print(f"[SCRAPER] Total rows setelah expand: {len(all_rows)}")
+
+        current_parent_serial = None
+        current_parent_name   = None
+        current_parent_status = None
+        current_adding_time   = None
+
+        for row in all_rows:
             cells = row.find_elements(By.CSS_SELECTOR, "td")
-            if len(cells) < 4:
+            if len(cells) < 3:
                 continue
 
-            # Serial bisa mengandung badge (NVR/IPC/dll) di bawah serial number
-            # Ambil baris pertama saja sebagai serial, dan sisanya sebagai device_type
-            serial_raw  = cells[0].text.strip()
-            serial_lines = serial_raw.split("\n")
-            serial      = serial_lines[0].strip()
-            device_type = serial_lines[1].strip() if len(serial_lines) > 1 else ""
+            # ── Deteksi apakah ini row device utama atau row channel ──
+            # Row device utama: cell[0] berisi serial number (huruf+angka, mungkin + badge NVR/IPC)
+            # Row channel: cell[0] berisi nama channel, cell[1] berisi status,
+            #   cell[2] berisi channel number (angka)
+            first_cell_text = cells[0].text.strip()
+            first_lines = first_cell_text.split("\n")
+            first_line = first_lines[0].strip()
 
-            name        = cells[1].text.strip().rstrip("\u270f").strip()   # buang ikon edit
-            # Buang karakter non-ascii (ikon edit ✏) dari nama
-            name        = re.sub(r'[✏\u270f\u270e]', '', name).strip()
-            adding_time = cells[2].text.strip()
-            status_raw  = cells[3].text.strip()
-            channel_no  = cells[4].text.strip() if len(cells) >= 5 else "1"
+            # Cek apakah baris pertama cell[0] cocok pola serial (huruf kapital + angka, 6-20 char)
+            is_device_row = bool(re.match(r'^[A-Z0-9]{6,20}$', first_line))
 
-            # Validasi serial (huruf kapital + angka, 6-20 karakter)
-            if not serial or not re.match(r'^[A-Z0-9]{6,20}$', serial):
-                # Fallback: coba extract serial dari teks mentah cell
-                m_serial = re.search(r'[A-Z0-9]{6,20}', serial_raw)
-                if m_serial:
-                    serial = m_serial.group(0)
-                else:
-                    print(f"[SCRAPER] Skip row — serial tidak valid: {serial_raw[:50]}")
+            if is_device_row:
+                # ── ROW DEVICE UTAMA (NVR/IPC/dll) ──
+                serial = first_line
+                device_type = first_lines[1].strip() if len(first_lines) > 1 else ""
+
+                name = cells[1].text.strip() if len(cells) >= 2 else ""
+                name = re.sub(r'[✏\u270f\u270e]', '', name).strip()
+                adding_time = cells[2].text.strip() if len(cells) >= 3 else ""
+                status_raw  = cells[3].text.strip() if len(cells) >= 4 else ""
+                status = "online" if "online" in status_raw.lower() else "offline"
+
+                # Simpan sebagai parent context untuk channel rows
+                current_parent_serial = serial
+                current_parent_name   = name
+                current_parent_status = status
+                current_adding_time   = adding_time
+
+                # Cek kolom Channel (biasanya cells[5] atau cells[6]) —
+                # Jika teks berisi "open channel" atau "close channel", ini NVR → skip device-level row
+                # Channel-channel akan muncul sebagai sub-rows
+                row_text_lower = row.text.lower()
+                if "open channel" in row_text_lower or "close channel" in row_text_lower:
+                    # NVR — channel akan diproses dari sub-rows
+                    print(f"[SCRAPER] NVR detected: {serial} ({name}) — channels akan diproses terpisah")
                     continue
 
-            # Normalkan status
-            status = "online" if "online" in status_raw.lower() else "offline"
+                # IPC/standalone camera — langsung tambahkan
+                # Channel number
+                channel_no_text = cells[4].text.strip() if len(cells) >= 5 else "1"
+                try:
+                    m_ch = re.search(r'\d+', channel_no_text)
+                    ch = int(m_ch.group()) if m_ch else 1
+                except Exception:
+                    ch = 1
 
-            # Channel number — bisa "-" untuk NVR, atau angka
-            try:
-                m_ch = re.search(r'\d+', channel_no)
-                ch = int(m_ch.group()) if m_ch else 1
-            except Exception:
-                ch = 1
+                devices.append({
+                    "serial":       serial,
+                    "name":         name,
+                    "device_type":  device_type,
+                    "adding_time":  adding_time,
+                    "status":       status,
+                    "channel_no":   ch,
+                })
 
-            devices.append({
-                "serial":       serial,
-                "name":         name,
-                "device_type":  device_type,  # NVR, IPC, dll (dari badge di portal)
-                "adding_time":  adding_time,
-                "status":       status,
-                "channel_no":   ch,
-            })
+            elif current_parent_serial:
+                # ── ROW CHANNEL (sub-row dari NVR) ──
+                # Struktur: Name | Device status | Channel number | Channel | Action
+                ch_name    = first_line
+                ch_name    = re.sub(r'[✏\u270f\u270e]', '', ch_name).strip()
+                ch_status_raw = cells[1].text.strip() if len(cells) >= 2 else ""
+                ch_status  = "online" if "online" in ch_status_raw.lower() else "offline"
+                ch_no_text = cells[2].text.strip() if len(cells) >= 3 else ""
+
+                try:
+                    m_ch = re.search(r'\d+', ch_no_text)
+                    ch_no = int(m_ch.group()) if m_ch else 1
+                except Exception:
+                    ch_no = 1
+
+                # Nama: gabungkan nama channel + nama NVR parent
+                display_name = ch_name if ch_name else f"Channel {ch_no}"
+
+                devices.append({
+                    "serial":        current_parent_serial,
+                    "name":          display_name,
+                    "device_type":   "NVR-CH",
+                    "parent_name":   current_parent_name,
+                    "adding_time":   current_adding_time or "",
+                    "status":        ch_status,
+                    "channel_no":    ch_no,
+                })
 
         return {
             "success": True,
             "devices": devices,
             "total":   len(devices),
-            "message": f"{len(devices)} device berhasil diambil dari EZVIZ portal"
+            "message": f"{len(devices)} device/channel berhasil diambil dari EZVIZ portal"
         }
 
     except Exception as e:
