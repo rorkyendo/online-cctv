@@ -80,14 +80,6 @@ class ProfileController extends Controller
         return redirect()->route('profile')->with('success', 'Profil berhasil diperbarui.');
     }
 
-    public function userGuide(Request $request)
-    {
-        $data             = $this->getCommonData();
-        $data['title']    = 'Panduan Penambahan Kamera';
-        $data['content']  = 'module.panduan.main';
-        return view('module.content', ['data' => $data]);
-    }
-
     public function updatePassword(Request $request)
     {
         $user = session()->get('user');
@@ -115,5 +107,15 @@ class ProfileController extends Controller
         LogHelper::log('Ganti Password', 'Profile', 'User mengganti password: ' . $pengguna->nama_lengkap);
 
         return redirect()->route('profile')->with('success', 'Password berhasil diperbarui.');
+    }
+
+    public function userGuide(Request $request)
+    {
+        $data = $this->getCommonData();
+
+        $data['title']    = 'Panduan Penggunaan';
+        $data['content']  = 'module.panduan.main';
+
+        return view('module.content', ['data' => $data]);
     }
 }

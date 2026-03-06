@@ -1,468 +1,332 @@
-{{-- User Guide / Panduan Penggunaan --}}
+﻿{{-- Panduan Penggunaan Lengkap --}}
 <style>
-.guide-step-card { border-left: 4px solid #009ef7; border-radius: 0 12px 12px 0; }
-.guide-step-num  { width:40px; height:40px; border-radius:50%; font-size:1.1rem; font-weight:700; flex-shrink:0; }
-.guide-tip       { background:#fff8e1; border-left:4px solid #ffc107; border-radius:0 8px 8px 0; }
-.guide-warn      { background:#fff3cd; border-left:4px solid #f1416c; border-radius:0 8px 8px 0; }
-.guide-badge-step{ background:#009ef7; color:#fff; padding:3px 12px; border-radius:20px; font-size:.75rem; font-weight:600; }
-.device-sticker  { background:#1e1e2d; color:#a2a3b7; border-radius:12px; font-family:monospace; }
-.mock-btn        { display:inline-flex; align-items:center; gap:4px; background:#f1f5f9; border:1px solid #dee2e6; border-radius:6px; padding:2px 10px; font-size:.8rem; font-weight:600; }
-.mock-btn.primary  { background:#009ef7; border-color:#009ef7; color:#fff; }
-.mock-btn.success  { background:#50cd89; border-color:#50cd89; color:#fff; }
-.mock-btn.warning  { background:#ffc700; border-color:#ffc700; color:#1e1e2d; }
-.mock-btn.info     { background:#7239ea; border-color:#7239ea; color:#fff; }
-.step-connector    { width:2px; background:#e4e6ef; margin:0 auto; }
+.guide-step-card  { border-left:4px solid #009ef7; border-radius:0 12px 12px 0; }
+.guide-step-num   { width:36px;height:36px;border-radius:50%;font-size:1rem;font-weight:700;flex-shrink:0; }
+.guide-tip        { background:#fff8e1;border-left:4px solid #ffc107;border-radius:0 8px 8px 0; }
+.guide-warn       { background:#fff0f0;border-left:4px solid #f1416c;border-radius:0 8px 8px 0; }
+.guide-info       { background:#f0f6ff;border-left:4px solid #009ef7;border-radius:0 8px 8px 0; }
+.mock-btn         { display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;border:1px solid #dee2e6;border-radius:6px;padding:2px 10px;font-size:.78rem;font-weight:600; }
+.mock-btn.primary { background:#009ef7;border-color:#009ef7;color:#fff; }
+.mock-btn.success { background:#50cd89;border-color:#50cd89;color:#fff; }
+.mock-btn.danger  { background:#f1416c;border-color:#f1416c;color:#fff; }
+.mock-btn.warning { background:#ffc700;border-color:#ffc700;color:#1e1e2d; }
+.mock-btn.info    { background:#7239ea;border-color:#7239ea;color:#fff; }
+.guide-nav .nav-link          { border-radius:8px;font-weight:600;font-size:.82rem;padding:7px 14px;color:#5e6278; }
+.guide-nav .nav-link.active   { background:#009ef7;color:#fff; }
+.guide-nav .nav-link:hover:not(.active) { background:#f1f5f9; }
+.section-badge { display:inline-flex;align-items:center;gap:6px;background:#f0f6ff;border:1px solid #d6eaff;border-radius:20px;padding:3px 14px;font-size:.75rem;font-weight:700;color:#009ef7;margin-bottom:10px; }
+.step-row { background:#f9fafb;border-radius:10px;padding:16px 20px;margin-bottom:12px; }
+.step-row .step-num { width:28px;height:28px;min-width:28px;background:#009ef7;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700; }
+.role-badge { padding:3px 10px;border-radius:20px;font-size:.73rem;font-weight:700; }
+.role-su  { background:#ffd6e0;color:#c0143c; }
+.role-adm { background:#d6eaff;color:#0056b3; }
+.role-opr { background:#d6f5e6;color:#0a6640; }
+.role-usr { background:#ede8ff;color:#5e3ec5; }
 </style>
 
-<div class="d-flex justify-content-between align-items-center mb-6">
+<div class="d-flex justify-content-between align-items-start mb-5">
     <div>
-        <h4 class="fw-bold mb-1"><i class="bi bi-book-half me-2 text-primary"></i>Panduan Penambahan Kamera</h4>
-        <span class="text-muted fs-7">Panduan lengkap cara mendaftarkan dan mengelola kamera CCTV di sistem ini</span>
+        <h4 class="fw-bold mb-1"><i class="bi bi-book-half me-2 text-primary"></i>Panduan Penggunaan Sistem</h4>
+        <span class="text-muted fs-7">Panduan lengkap seluruh fitur aplikasi monitoring CCTV</span>
     </div>
     <a href="{{ url('/panel/dashboard') }}" class="btn btn-sm btn-light">
-        <i class="bi bi-arrow-left me-2"></i>Kembali ke Dashboard
+        <i class="bi bi-arrow-left me-2"></i>Dashboard
     </a>
 </div>
 
-{{-- Quick Nav --}}
-<div class="card shadow-sm mb-6">
-    <div class="card-body py-4">
-        <div class="d-flex flex-wrap gap-3 align-items-center">
-            <span class="fw-semibold text-muted fs-7 me-2">Loncat ke:</span>
-            <a href="#step1" class="btn btn-sm btn-light-primary">1 · Persiapan</a>
-            <a href="#step2" class="btn btn-sm btn-light-primary">2 · Daftarkan Kamera</a>
-            <a href="#step3" class="btn btn-sm btn-light-primary">3 · Sinkronisasi</a>
-            <a href="#step4" class="btn btn-sm btn-light-primary">4 · Import & Atur</a>
-            <a href="#step5" class="btn btn-sm btn-light-primary">5 · Live View</a>
-            <a href="#faq"   class="btn btn-sm btn-light-warning">FAQ</a>
-        </div>
+<div class="card shadow-sm mb-5">
+    <div class="card-body py-3 px-4">
+        <ul class="nav guide-nav flex-wrap gap-1" id="guideTab" role="tablist">
+            <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-dashboard"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-gruplokasi"><i class="bi bi-folder2 me-1"></i>Grup Lokasi</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-lokasi"><i class="bi bi-geo-alt me-1"></i>Lokasi</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-cctv"><i class="bi bi-camera-video me-1"></i>CCTV</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-liveview"><i class="bi bi-display me-1"></i>Live View</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-pengguna"><i class="bi bi-people me-1"></i>Pengguna</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-hakakses"><i class="bi bi-shield-check me-1"></i>Hak Akses</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-ezviz"><i class="bi bi-cloud me-1"></i>Akun EZVIZ</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-pengaturan"><i class="bi bi-gear me-1"></i>Pengaturan</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-log"><i class="bi bi-journal-text me-1"></i>Log Aktivitas</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-profil"><i class="bi bi-person-circle me-1"></i>Profil</a></li>
+        </ul>
     </div>
 </div>
 
-{{-- ─────────────────────────── STEP 1 ─────────────────────────── --}}
-<div id="step1" class="card shadow-sm guide-step-card mb-4">
-    <div class="card-body p-6">
-        <div class="d-flex align-items-center gap-4 mb-5">
-            <div class="guide-step-num bg-primary text-white d-flex align-items-center justify-content-center">1</div>
-            <div>
-                <span class="guide-badge-step mb-1 d-inline-block">LANGKAH PERTAMA</span>
-                <h5 class="fw-bold mb-0">Persiapan — Informasi yang Dibutuhkan</h5>
-            </div>
-        </div>
+<div class="tab-content">
 
-        <p class="text-muted mb-4">Sebelum menambahkan kamera, siapkan dua informasi penting yang tertera pada <strong>stiker di badan kamera</strong>:</p>
-
-        <div class="row g-4 mb-5">
-            <div class="col-md-6">
-                <div class="card border border-dashed border-primary h-100">
-                    <div class="card-body">
-                        <h6 class="fw-bold text-primary mb-2"><i class="bi bi-upc-scan me-2"></i>Serial Number (SN)</h6>
-                        <p class="text-muted fs-7 mb-3">Kode unik identitas perangkat kamera. Biasanya terdiri dari 9 karakter huruf besar dan angka.</p>
-                        <div class="device-sticker p-3 text-center">
-                            <div class="text-muted" style="font-size:.65rem;letter-spacing:1px">SERIAL NUMBER</div>
-                            <div style="font-size:1.3rem;letter-spacing:3px;color:#50cd89">ABC123456</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card border border-dashed border-warning h-100">
-                    <div class="card-body">
-                        <h6 class="fw-bold text-warning mb-2"><i class="bi bi-key me-2"></i>Verification Code</h6>
-                        <p class="text-muted fs-7 mb-3">Kode keamanan 6 karakter. Biasanya disebut <em>Verification Code</em> atau <em>Valid Code</em> pada stiker.</p>
-                        <div class="device-sticker p-3 text-center">
-                            <div class="text-muted" style="font-size:.65rem;letter-spacing:1px">VERIFICATION CODE</div>
-                            <div style="font-size:1.3rem;letter-spacing:3px;color:#ffc700">ABCD12</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="guide-tip p-4">
-            <h6 class="fw-bold text-warning mb-1"><i class="bi bi-lightbulb me-2"></i>Tips</h6>
-            <ul class="mb-0 text-muted fs-7">
-                <li>Stiker biasanya berada di bagian <strong>bawah</strong> atau <strong>belakang</strong> kamera.</li>
-                <li>Pastikan kamera sudah <strong>terpasang</strong>, <strong>menyala</strong>, dan <strong>terhubung ke internet/jaringan lokal</strong> sebelum melanjutkan.</li>
-                <li>Serial Number dan Verification Code juga bisa ditemukan di <strong>kemasan dus</strong> kamera.</li>
+{{-- DASHBOARD --}}
+<div class="tab-pane fade show active" id="tab-dashboard">
+    <div class="section-badge"><i class="bi bi-speedometer2"></i> DASHBOARD</div>
+    <h5 class="fw-bold mb-4">Ringkasan & Overview Sistem</h5>
+    <div class="guide-info p-4 mb-5"><strong>Dashboard</strong> adalah halaman utama setelah login, menampilkan ringkasan kondisi sistem secara real-time.</div>
+    <div class="row g-4 mb-5">
+        <div class="col-md-6"><div class="card border h-100"><div class="card-body">
+            <h6 class="fw-bold mb-3"><i class="bi bi-grid-1x2 me-2 text-primary"></i>Kartu Statistik</h6>
+            <ul class="text-muted fs-7 mb-0">
+                <li class="mb-2"><strong>Total Grup Lokasi</strong> — jumlah grup yang dapat diakses pengguna ini</li>
+                <li class="mb-2"><strong>Total Lokasi</strong> — jumlah titik lokasi dalam grup yang diakses</li>
+                <li class="mb-2"><strong>Total CCTV</strong> — jumlah kamera yang terdaftar</li>
+                <li><strong>CCTV Online</strong> — kamera yang sedang terhubung ke cloud</li>
             </ul>
-        </div>
-    </div>
-</div>
-
-<div class="step-connector" style="height:32px"></div>
-
-{{-- ─────────────────────────── STEP 2 ─────────────────────────── --}}
-<div id="step2" class="card shadow-sm guide-step-card mb-4">
-    <div class="card-body p-6">
-        <div class="d-flex align-items-center gap-4 mb-5">
-            <div class="guide-step-num bg-success text-white d-flex align-items-center justify-content-center">2</div>
-            <div>
-                <span class="guide-badge-step mb-1 d-inline-block" style="background:#50cd89">LANGKAH KEDUA</span>
-                <h5 class="fw-bold mb-0">Daftarkan Kamera ke Platform Cloud</h5>
-            </div>
-        </div>
-
-        <p class="text-muted mb-5">Sistem ini menggunakan <strong>Platform Cloud</strong> untuk mengelola koneksi ke kamera secara aman. Anda perlu mendaftarkan kamera terlebih dahulu agar sistem dapat menemukannya.</p>
-
-        <div class="row g-4 mb-5">
-            {{-- Sub-step 2a --}}
-            <div class="col-12">
-                <div class="d-flex gap-3 align-items-start p-4 bg-light rounded">
-                    <div class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width:28px;height:28px;min-width:28px;font-size:.8rem">a</div>
-                    <div>
-                        <p class="fw-semibold mb-1">Buka menu <strong>Master Data</strong> di sidebar kiri, lalu pilih sub-menu yang sesuai.</p>
-                        <p class="text-muted fs-7 mb-0">Anda akan melihat daftar kartu akun cloud yang terdaftar di sistem.</p>
-                    </div>
-                </div>
-            </div>
-            {{-- Sub-step 2b --}}
-            <div class="col-12">
-                <div class="d-flex gap-3 align-items-start p-4 bg-light rounded">
-                    <div class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width:28px;height:28px;min-width:28px;font-size:.8rem">b</div>
-                    <div>
-                        <p class="fw-semibold mb-2">Pada kartu akun yang ingin digunakan, klik tombol <span class="mock-btn primary"><i class="bi bi-plus-circle"></i> Tambah Device</span></p>
-                        <div class="card border border-dashed mb-0" style="max-width:420px">
-                            <div class="card-body p-4">
-                                <div class="d-flex align-items-center mb-3">
-                                    <div class="bg-light-primary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width:40px;height:40px">
-                                        <i class="bi bi-cloud fs-4 text-primary"></i>
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold">Nama Akun Cloud</div>
-                                        <div class="text-muted fs-7">platform.cloudsystem.com</div>
-                                    </div>
-                                </div>
-                                <div class="d-flex gap-2">
-                                    <span class="mock-btn warning flex-grow-1 justify-content-center"><i class="bi bi-pencil"></i> Edit</span>
-                                    <span class="mock-btn success"><i class="bi bi-camera-video"></i></span>
-                                    <span class="mock-btn primary"><i class="bi bi-plus-circle"></i></span>
-                                    <span class="mock-btn info"><i class="bi bi-arrow-repeat"></i></span>
-                                </div>
-                            </div>
-                        </div>
-                        <p class="text-muted fs-7 mt-2 mb-0">Tombol <span class="mock-btn primary" style="font-size:.7rem"><i class="bi bi-plus-circle"></i></span> adalah tombol tambah device baru.</p>
-                    </div>
-                </div>
-            </div>
-            {{-- Sub-step 2c --}}
-            <div class="col-12">
-                <div class="d-flex gap-3 align-items-start p-4 bg-light rounded">
-                    <div class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width:28px;height:28px;min-width:28px;font-size:.8rem">c</div>
-                    <div class="flex-grow-1">
-                        <p class="fw-semibold mb-2">Isi modal yang muncul dengan data dari stiker kamera:</p>
-                        <div class="card border border-dashed" style="max-width:400px">
-                            <div class="card-body p-4">
-                                <h6 class="fw-bold mb-3">Tambah Device ke Cloud</h6>
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold fs-7 required">Serial Number</label>
-                                    <div class="form-control bg-light text-muted fs-7">Contoh: ABC123456</div>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold fs-7 required">Verification Code</label>
-                                    <div class="form-control bg-light text-muted fs-7">Contoh: ABCD12</div>
-                                </div>
-                                <span class="mock-btn primary w-100 justify-content-center py-2"><i class="bi bi-plus-circle me-2"></i>Tambahkan</span>
-                            </div>
-                        </div>
-                        <p class="text-muted fs-7 mt-2 mb-0">Klik <strong>Tambahkan</strong>. Jika berhasil, muncul notifikasi hijau — kamera kini terdaftar di platform cloud.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="guide-warn p-4">
-            <h6 class="fw-bold text-danger mb-1"><i class="bi bi-exclamation-triangle me-2"></i>Perhatian</h6>
-            <ul class="mb-0 text-muted fs-7">
-                <li>Pastikan kamera sudah <strong>online dan terhubung ke internet</strong> saat mendaftarkan.</li>
-                <li>Verification Code bersifat <strong>case-sensitive</strong> — pastikan penulisan sesuai stiker.</li>
-                <li>Jika muncul pesan <em>"Device sudah terdaftar di akun lain"</em>, kamera tersebut perlu dilepas dari akun lama terlebih dahulu.</li>
+            <div class="guide-tip p-3 mt-3 fs-7">Klik tombol <span class="mock-btn primary" style="font-size:.7rem"><i class="bi bi-arrow-right"></i></span> pada tiap kartu untuk menuju halaman terkait.</div>
+        </div></div></div>
+        <div class="col-md-6"><div class="card border h-100"><div class="card-body">
+            <h6 class="fw-bold mb-3"><i class="bi bi-folder2 me-2 text-primary"></i>Daftar Grup Lokasi</h6>
+            <ul class="text-muted fs-7 mb-0">
+                <li class="mb-2">Menampilkan daftar grup yang bisa diakses pengguna</li>
+                <li class="mb-2">Tiap item menunjukkan jumlah CCTV dan lokasi di dalam grup</li>
+                <li>Klik item untuk menuju <strong>Detail Grup</strong></li>
             </ul>
-        </div>
+        </div></div></div>
+        <div class="col-md-6"><div class="card border h-100"><div class="card-body">
+            <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart me-2 text-primary"></i>Statistik Sistem</h6>
+            <p class="text-muted fs-7 mb-0">Menampilkan jumlah pengguna aktif, akun cloud EZVIZ, dan jumlah hak akses (role) yang tersedia di sistem.</p>
+        </div></div></div>
+        <div class="col-md-6"><div class="card border h-100"><div class="card-body">
+            <h6 class="fw-bold mb-3"><i class="bi bi-journal-text me-2 text-primary"></i>Log Aktivitas Terakhir</h6>
+            <p class="text-muted fs-7 mb-0">Menampilkan 5 aktivitas terakhir pengguna. Klik <strong>"Lihat Semua"</strong> untuk menuju halaman Log Aktivitas lengkap.</p>
+        </div></div></div>
     </div>
 </div>
 
-<div class="step-connector" style="height:32px"></div>
+{{-- GRUP LOKASI --}}
+<div class="tab-pane fade" id="tab-gruplokasi">
+    <div class="section-badge"><i class="bi bi-folder2"></i> GRUP LOKASI</div>
+    <h5 class="fw-bold mb-4">Mengelola Grup Lokasi</h5>
+    <div class="guide-info p-4 mb-5"><strong>Grup Lokasi</strong> adalah pengelompokan area pemantauan (contoh: "Gedung A", "Area Parkir"). Setiap lokasi dan CCTV harus berada dalam satu grup.</div>
 
-{{-- ─────────────────────────── STEP 3 ─────────────────────────── --}}
-<div id="step3" class="card shadow-sm guide-step-card mb-4">
-    <div class="card-body p-6">
-        <div class="d-flex align-items-center gap-4 mb-5">
-            <div class="guide-step-num bg-info text-white d-flex align-items-center justify-content-center">3</div>
-            <div>
-                <span class="guide-badge-step mb-1 d-inline-block" style="background:#7239ea">LANGKAH KETIGA</span>
-                <h5 class="fw-bold mb-0">Sinkronisasi — Tarik Data Kamera ke Sistem</h5>
-            </div>
-        </div>
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-plus-circle me-2"></i>Menambah Grup Baru</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Buka <strong>Grup Lokasi → Daftar Grup Lokasi</strong>, klik <span class="mock-btn primary"><i class="bi bi-plus-circle"></i> Tambah Group</span>.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">2</div><div>Isi <strong>Nama Grup</strong> (wajib) dan <strong>Deskripsi</strong> (opsional), lalu klik <span class="mock-btn primary">Simpan</span>.</div></div>
 
-        <p class="text-muted mb-5">Setelah kamera berhasil didaftarkan di platform cloud, langkah berikutnya adalah menarik (sinkronisasi) data kamera tersebut ke dalam aplikasi ini.</p>
+    <h6 class="fw-bold text-primary mb-3 mt-4"><i class="bi bi-pencil me-2"></i>Edit & Hapus Grup</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Klik <span class="mock-btn warning"><i class="bi bi-pencil"></i> Edit</span> untuk mengubah nama/deskripsi, atau <span class="mock-btn danger"><i class="bi bi-trash"></i> Hapus</span> untuk menghapus.</div></div>
+    <div class="guide-warn p-3 mb-4"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Grup hanya bisa dihapus jika <strong>tidak memiliki lokasi</strong> di dalamnya.</div>
 
-        <div class="row g-4 mb-5">
-            <div class="col-md-6">
-                <div class="card border h-100">
-                    <div class="card-body p-4">
-                        <h6 class="fw-bold mb-3"><i class="bi bi-camera-video me-2 text-primary"></i>Cara A — Melalui Menu CCTV</h6>
-                        <ol class="text-muted fs-7 ps-3 mb-0">
-                            <li class="mb-2">Buka menu <strong>CCTV</strong> → <strong>Daftar CCTV</strong> di sidebar.</li>
-                            <li class="mb-2">Klik tombol <span class="mock-btn" style="font-size:.7rem"><i class="bi bi-arrow-repeat me-1"></i>Sinkronisasi</span> di bagian atas halaman.</li>
-                            <li class="mb-2">Pilih akun cloud yang digunakan, lalu klik <strong>Sinkronisasi</strong>.</li>
-                            <li>Daftar kamera dari platform cloud akan ditarik untuk proses import.</li>
-                        </ol>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card border h-100">
-                    <div class="card-body p-4">
-                        <h6 class="fw-bold mb-3"><i class="bi bi-cloud-download me-2 text-success"></i>Cara B — Langsung dari Master Data</h6>
-                        <ol class="text-muted fs-7 ps-3 mb-0">
-                            <li class="mb-2">Masih di halaman <strong>Master Data</strong>, klik tombol <span class="mock-btn success" style="font-size:.7rem"><i class="bi bi-camera-video"></i></span> pada kartu akun.</li>
-                            <li class="mb-2">Sistem akan menampilkan daftar semua kamera yang terdaftar di akun cloud tersebut.</li>
-                            <li>Kamera yang baru didaftarkan di Langkah 2 akan muncul di sini.</li>
-                        </ol>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-eye me-2"></i>Detail Grup</h6>
+    <div class="step-row d-flex gap-3 align-items-start mb-4"><div class="step-num">1</div><div>Klik <span class="mock-btn"><i class="bi bi-eye"></i> Detail</span> untuk melihat daftar lokasi dan semua CCTV yang ada di dalam grup ini.</div></div>
 
-        <div class="guide-tip p-4">
-            <strong><i class="bi bi-info-circle me-2 text-primary"></i>Info:</strong>
-            <span class="text-muted fs-7"> Sinkronisasi hanya <em>menarik data</em> dari platform cloud ke antarmuka import — belum menyimpan kamera ke sistem. Penyimpanan dilakukan di Langkah 4.</span>
-        </div>
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-display me-2"></i>Live View per Grup & Semua Grup</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Klik <span class="mock-btn success"><i class="bi bi-display"></i> Live</span> pada kartu grup untuk menonton semua kamera dalam grup tersebut.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start mb-3"><div class="step-num">2</div><div>Klik <span class="mock-btn success"><i class="bi bi-grid"></i> Live Semua CCTV</span> di header halaman untuk menonton <strong>semua grup sekaligus</strong> sesuai hak akses.</div></div>
+    <div class="guide-tip p-3"><i class="bi bi-lightbulb me-2 text-warning"></i>Pengguna hanya melihat grup yang sesuai hak aksesnya. Grup yang tidak diizinkan tidak akan muncul.</div>
+</div>
+
+{{-- LOKASI --}}
+<div class="tab-pane fade" id="tab-lokasi">
+    <div class="section-badge"><i class="bi bi-geo-alt"></i> LOKASI</div>
+    <h5 class="fw-bold mb-4">Mengelola Lokasi</h5>
+    <div class="guide-info p-4 mb-5"><strong>Lokasi</strong> adalah titik area spesifik di dalam sebuah Grup (contoh: "Lobby", "Lantai 2", "Parkiran"). Setiap CCTV harus terpasang pada satu lokasi.</div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-plus-circle me-2"></i>Menambah Lokasi</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Buka <strong>Lokasi → Daftar Lokasi</strong>, klik <span class="mock-btn primary"><i class="bi bi-plus-circle"></i> Tambah Lokasi</span>.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">2</div><div>Isi <strong>Nama Lokasi</strong> (wajib), pilih <strong>Grup</strong> (wajib), dan <strong>Deskripsi</strong> (opsional).</div></div>
+    <div class="step-row d-flex gap-3 align-items-start mb-4"><div class="step-num">3</div><div>Klik <span class="mock-btn primary">Simpan</span>.</div></div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-pencil me-2"></i>Edit & Hapus Lokasi</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Klik <span class="mock-btn warning"><i class="bi bi-pencil"></i> Edit</span> untuk mengubah, atau <span class="mock-btn danger"><i class="bi bi-trash"></i> Hapus</span> untuk menghapus.</div></div>
+    <div class="guide-warn p-3 mb-4"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Lokasi hanya bisa dihapus jika <strong>tidak ada CCTV</strong> yang terpasang di sana.</div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-display me-2"></i>Live View per Lokasi</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Dari <strong>Detail Lokasi</strong>, klik <span class="mock-btn success"><i class="bi bi-display"></i> Live View</span> untuk menonton semua kamera di lokasi tersebut.</div></div>
+</div>
+
+{{-- CCTV --}}
+<div class="tab-pane fade" id="tab-cctv">
+    <div class="section-badge"><i class="bi bi-camera-video"></i> CCTV</div>
+    <h5 class="fw-bold mb-4">Mengelola Data CCTV</h5>
+    <div class="guide-info p-4 mb-5"><strong>CCTV</strong> adalah data kamera yang sudah diimport ke sistem. Setiap kamera memiliki Serial Number, nama, lokasi, dan akun cloud yang mengelolanya.</div>
+
+    <div class="guide-tip p-3 mb-4"><i class="bi bi-lightbulb me-2 text-warning"></i>Cara yang disarankan adalah melalui <strong>Import dari Akun EZVIZ</strong> (tab Akun EZVIZ) yang bisa import banyak sekaligus.</div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-plus-circle me-2"></i>Tambah CCTV (Manual)</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Buka <strong>CCTV → Daftar CCTV</strong>, klik <span class="mock-btn primary"><i class="bi bi-plus-circle"></i> Tambah CCTV</span>.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">2</div><div>Isi: <strong>Nama Kamera</strong>, <strong>Serial Number</strong>, pilih <strong>Lokasi</strong>, pilih <strong>Akun EZVIZ</strong>, dan <strong>Channel</strong>.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start mb-4"><div class="step-num">3</div><div>Klik <span class="mock-btn primary">Simpan</span>.</div></div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-pencil me-2"></i>Edit & Hapus CCTV</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Klik <span class="mock-btn warning"><i class="bi bi-pencil"></i> Edit</span> untuk mengubah nama, lokasi, atau akun cloud.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start mb-4"><div class="step-num">2</div><div>Klik <span class="mock-btn danger"><i class="bi bi-trash"></i> Hapus</span> untuk menghapus data kamera dari sistem (tidak menghapus dari cloud).</div></div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-info-circle me-2"></i>Detail CCTV & Capture</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Klik <span class="mock-btn"><i class="bi bi-eye"></i> Detail</span> untuk melihat info lengkap kamera: SN, status online, akun cloud, lokasi, dan pratinjau live stream.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">2</div><div>Di halaman detail, klik <span class="mock-btn success"><i class="bi bi-camera"></i> Capture</span> untuk mengambil screenshot dari stream kamera tersebut.</div></div>
+</div>
+
+{{-- LIVE VIEW --}}
+<div class="tab-pane fade" id="tab-liveview">
+    <div class="section-badge"><i class="bi bi-display"></i> LIVE VIEW</div>
+    <h5 class="fw-bold mb-4">Menonton Siaran Langsung CCTV</h5>
+    <div class="guide-info p-4 mb-5">Tersedia tiga level Live View: <strong>Semua Grup</strong>, <strong>per Grup</strong>, dan <strong>per Lokasi</strong>. Semua siaran real-time menggunakan protokol EZOPEN atau HLS.</div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-grid me-2"></i>Live View Semua Grup</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Klik <strong>CCTV → Live Semua CCTV</strong>, atau dari Daftar Grup klik <span class="mock-btn success"><i class="bi bi-grid"></i> Live Semua CCTV</span>.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start mb-4"><div class="step-num">2</div><div>Gunakan tab filter grup (atas) dan kontrol: <strong>Layout</strong> kolom (1-4), <strong>Protokol</strong> (EZOPEN/HLS), <span class="mock-btn"><i class="bi bi-arrow-repeat"></i> Reload All</span>, <span class="mock-btn"><i class="bi bi-volume-mute"></i> Mute</span>. Klik tile kamera untuk mode fokus.</div></div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-folder2 me-2"></i>Live View per Grup</h6>
+    <div class="step-row d-flex gap-3 align-items-start mb-4"><div class="step-num">1</div><div>Dari <strong>Daftar Grup Lokasi</strong>, klik <span class="mock-btn success"><i class="bi bi-display"></i> Live</span> pada kartu grup yang diinginkan.</div></div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-geo-alt me-2"></i>Live View per Lokasi</h6>
+    <div class="step-row d-flex gap-3 align-items-start mb-4"><div class="step-num">1</div><div>Buka <strong>Detail Lokasi</strong>, klik <span class="mock-btn success"><i class="bi bi-display"></i> Live View</span>.</div></div>
+
+    <div class="guide-tip p-4">
+        <h6 class="fw-bold text-warning mb-2"><i class="bi bi-lightbulb me-2"></i>Tips Live View</h6>
+        <ul class="text-muted fs-7 mb-0">
+            <li class="mb-1">Jika stream tidak muncul, klik ikon <i class="bi bi-arrow-repeat"></i> refresh pada tile kamera tersebut.</li>
+            <li class="mb-1">Gunakan <strong>EZOPEN</strong> untuk koneksi lebih stabil. Gunakan <strong>HLS</strong> jika EZOPEN tidak bekerja.</li>
+            <li class="mb-1">Pilihan kolom tersimpan otomatis di browser sehingga tidak perlu diatur ulang.</li>
+            <li>Browser yang disarankan: <strong>Google Chrome</strong> atau <strong>Microsoft Edge</strong> versi terbaru.</li>
+        </ul>
     </div>
 </div>
 
-<div class="step-connector" style="height:32px"></div>
-
-{{-- ─────────────────────────── STEP 4 ─────────────────────────── --}}
-<div id="step4" class="card shadow-sm guide-step-card mb-4">
-    <div class="card-body p-6">
-        <div class="d-flex align-items-center gap-4 mb-5">
-            <div class="guide-step-num bg-warning text-dark d-flex align-items-center justify-content-center">4</div>
-            <div>
-                <span class="guide-badge-step mb-1 d-inline-block" style="background:#ffc700;color:#1e1e2d">LANGKAH KEEMPAT</span>
-                <h5 class="fw-bold mb-0">Import & Atur Detail Kamera</h5>
-            </div>
-        </div>
-
-        <p class="text-muted mb-5">Setelah daftar kamera muncul, pilih kamera yang ingin ditambahkan, isi detailnya, lalu simpan ke sistem.</p>
-
-        <div class="row g-4 mb-5">
-            <div class="col-12">
-                <div class="d-flex gap-3 align-items-start p-4 bg-light rounded">
-                    <div class="badge bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center" style="width:28px;height:28px;min-width:28px;font-size:.8rem">a</div>
-                    <div>
-                        <p class="fw-semibold mb-1">Dari daftar kamera yang muncul setelah sinkronisasi, temukan kamera yang ingin ditambahkan.</p>
-                        <p class="text-muted fs-7 mb-0">Kamera yang sudah pernah diimport akan ditandai <span class="badge badge-light-success fs-8">Sudah ditambahkan</span>. Kamera baru memiliki tombol <span class="mock-btn primary" style="font-size:.7rem"><i class="bi bi-plus me-1"></i>Tambah</span>.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12">
-                <div class="d-flex gap-3 align-items-start p-4 bg-light rounded">
-                    <div class="badge bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center" style="width:28px;height:28px;min-width:28px;font-size:.8rem">b</div>
-                    <div class="flex-grow-1">
-                        <p class="fw-semibold mb-2">Klik tombol <span class="mock-btn primary" style="font-size:.7rem"><i class="bi bi-plus me-1"></i>Tambah</span> — form import akan muncul. Isi data berikut:</p>
-                        <div class="table-responsive" style="max-width:520px">
-                            <table class="table table-sm table-bordered fs-7">
-                                <thead class="table-light">
-                                    <tr><th>Field</th><th>Keterangan</th><th>Wajib?</th></tr>
-                                </thead>
-                                <tbody>
-                                    <tr><td><strong>Nama CCTV</strong></td><td>Nama deskriptif, mis. "Pintu Depan Lobby"</td><td><span class="text-danger">Ya</span></td></tr>
-                                    <tr><td><strong>Lokasi</strong></td><td>Lokasi fisik kamera (pilih dari daftar)</td><td><span class="text-danger">Ya</span></td></tr>
-                                    <tr><td><strong>Posisi</strong></td><td>Keterangan posisi spesifik, mis. "Sudut kiri atas"</td><td>Opsional</td></tr>
-                                    <tr><td><strong>Verification Code</strong></td><td>Kode dari stiker kamera (untuk enkripsi stream)</td><td>Opsional</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12">
-                <div class="d-flex gap-3 align-items-start p-4 bg-light rounded">
-                    <div class="badge bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center" style="width:28px;height:28px;min-width:28px;font-size:.8rem">c</div>
-                    <div>
-                        <p class="fw-semibold mb-1">Klik <strong>Tambahkan ke Sistem</strong>. Kamera kini tersimpan dan bisa dikelola dari menu <strong>CCTV</strong>.</p>
-                        <p class="text-muted fs-7 mb-0">Ulangi proses ini untuk setiap kamera yang ingin ditambahkan dari daftar yang sama.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="guide-tip p-4">
-            <h6 class="fw-bold text-warning mb-1"><i class="bi bi-lightbulb me-2"></i>Pastikan Lokasi Sudah Terdaftar</h6>
-            <p class="text-muted fs-7 mb-0">Sebelum mengimport kamera, pastikan <strong>Lokasi</strong> tujuan kamera sudah dibuat terlebih dahulu melalui menu <strong>Lokasi → Daftar Lokasi → Tambah Lokasi</strong>. Lokasi juga bisa dikelompokkan ke dalam <strong>Grup Lokasi</strong> untuk kemudahan pengelolaan.</p>
-        </div>
+{{-- PENGGUNA --}}
+<div class="tab-pane fade" id="tab-pengguna">
+    <div class="section-badge"><i class="bi bi-people"></i> MASTER DATA — PENGGUNA</div>
+    <h5 class="fw-bold mb-4">Mengelola Data Pengguna</h5>
+    <div class="guide-info p-4 mb-4">Pengguna adalah akun login yang bisa mengakses sistem. Setiap pengguna memiliki <strong>satu hak akses (role)</strong> yang menentukan modul dan grup yang bisa diakses.</div>
+    <div class="d-flex flex-wrap gap-2 mb-5">
+        <span class="role-badge role-su">superuser</span>
+        <span class="role-badge role-adm">admin</span>
+        <span class="role-badge role-opr">operator</span>
+        <span class="role-badge role-usr">viewer_divisi_x</span>
+        <span class="text-muted fs-7 align-self-center">← contoh peran yang tersedia</span>
     </div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-plus-circle me-2"></i>Menambah Pengguna Baru</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Buka <strong>Master Data → Daftar Pengguna</strong>, klik <span class="mock-btn primary"><i class="bi bi-plus-circle"></i> Tambah Pengguna</span>.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">2</div><div>Isi: <strong>Nama Lengkap</strong>, <strong>Username</strong> (unik), <strong>Email</strong>, <strong>Password</strong>, dan pilih <strong>Hak Akses</strong>.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start mb-4"><div class="step-num">3</div><div>Klik <span class="mock-btn primary">Simpan</span>. Pengguna langsung bisa login.</div></div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-pencil me-2"></i>Edit & Hapus Pengguna</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Klik <span class="mock-btn warning"><i class="bi bi-pencil"></i> Edit</span>. Kosongkan field password jika tidak ingin mengubahnya.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start mb-3"><div class="step-num">2</div><div>Klik <span class="mock-btn danger"><i class="bi bi-trash"></i> Hapus</span> untuk menghapus akun. Tindakan ini permanen.</div></div>
+    <div class="guide-warn p-3"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Akun <strong>superuser</strong> tidak dapat dihapus untuk mencegah sistem terkunci.</div>
 </div>
 
-<div class="step-connector" style="height:32px"></div>
+{{-- HAK AKSES --}}
+<div class="tab-pane fade" id="tab-hakakses">
+    <div class="section-badge"><i class="bi bi-shield-check"></i> MASTER DATA — HAK AKSES</div>
+    <h5 class="fw-bold mb-4">Mengelola Hak Akses (Role)</h5>
+    <div class="guide-info p-4 mb-5"><strong>Hak Akses</strong> menentukan: <strong>(1) modul apa yang bisa diakses</strong> dan <strong>(2) grup lokasi mana yang boleh dilihat</strong> oleh pengguna dengan role ini.</div>
 
-{{-- ─────────────────────────── STEP 5 ─────────────────────────── --}}
-<div id="step5" class="card shadow-sm guide-step-card mb-6">
-    <div class="card-body p-6">
-        <div class="d-flex align-items-center gap-4 mb-5">
-            <div class="guide-step-num bg-danger text-white d-flex align-items-center justify-content-center">5</div>
-            <div>
-                <span class="guide-badge-step mb-1 d-inline-block" style="background:#f1416c">LANGKAH KELIMA</span>
-                <h5 class="fw-bold mb-0">Live View — Menonton Siaran Langsung</h5>
-            </div>
-        </div>
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-plus-circle me-2"></i>Membuat Hak Akses Baru</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Buka <strong>Master Data → Hak Akses</strong>, klik <span class="mock-btn primary"><i class="bi bi-plus-circle"></i> Tambah Hak Akses</span>.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">2</div><div>Isi <strong>Nama Hak Akses</strong> (contoh: <code>viewer_divisi_b</code>).</div></div>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">3</div><div><strong>Centang Modul</strong> yang diizinkan. Centang parent akan mencentang semua sub-modul. Uncentang satu sub-modul tidak mempengaruhi yang lain.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">4</div><div><strong>Pilih Akses Grup</strong>: centang <em>"Semua Grup"</em> atau centang grup tertentu untuk membatasi visibilitas kamera.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start mb-4"><div class="step-num">5</div><div>Klik <span class="mock-btn primary">Simpan</span>. Role ini langsung bisa dipilih saat membuat/mengedit pengguna.</div></div>
 
-        <p class="text-muted mb-5">Setelah kamera berhasil diimport, Anda dapat langsung memantau siaran langsung kamera.</p>
-
-        <div class="row g-4 mb-5">
-            <div class="col-md-4">
-                <div class="card border text-center h-100">
-                    <div class="card-body p-4">
-                        <div class="bg-light-primary rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width:60px;height:60px">
-                            <i class="bi bi-camera-video fs-2 text-primary"></i>
-                        </div>
-                        <h6 class="fw-bold">Per Kamera</h6>
-                        <p class="text-muted fs-7 mb-0">Buka <strong>CCTV → Daftar CCTV</strong>, klik kartu kamera → klik tombol <span class="mock-btn primary" style="font-size:.7rem"><i class="bi bi-play-circle"></i></span> atau buka halaman detail kamera.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card border text-center h-100">
-                    <div class="card-body p-4">
-                        <div class="bg-light-success rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width:60px;height:60px">
-                            <i class="bi bi-grid fs-2 text-success"></i>
-                        </div>
-                        <h6 class="fw-bold">Per Grup / Lokasi</h6>
-                        <p class="text-muted fs-7 mb-0">Buka <strong>Grup Lokasi</strong> atau <strong>Lokasi</strong>, klik <strong>"Live View Semua"</strong> untuk menampilkan semua kamera di lokasi tersebut dalam grid.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card border text-center h-100">
-                    <div class="card-body p-4">
-                        <div class="bg-light-warning rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width:60px;height:60px">
-                            <i class="bi bi-camera fs-2 text-warning"></i>
-                        </div>
-                        <h6 class="fw-bold">Capture Gambar</h6>
-                        <p class="text-muted fs-7 mb-0">Di halaman detail kamera, klik tombol <strong>Capture</strong> untuk mengambil tangkapan layar dari stream yang sedang berjalan.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="guide-tip p-4">
-            <strong><i class="bi bi-info-circle me-2 text-primary"></i>Catatan Kompatibilitas:</strong>
-            <span class="text-muted fs-7"> Stream kamera menggunakan protokol <strong>EZOPEN</strong> yang memerlukan browser berbasis Chromium (Google Chrome, Microsoft Edge). Gunakan browser terbaru untuk pengalaman terbaik.</span>
-        </div>
+    <div class="guide-tip p-4 mb-4">
+        <h6 class="fw-bold text-warning mb-2"><i class="bi bi-lightbulb me-2"></i>Skenario Privasi Antar Divisi</h6>
+        <ul class="text-muted fs-7 mb-0">
+            <li>Buat role <code>viewer_divisi_a</code> → centang hanya <strong>Grup Divisi A</strong></li>
+            <li>Buat role <code>viewer_divisi_b</code> → centang hanya <strong>Grup Divisi B</strong></li>
+            <li>Pengguna Divisi A tidak akan bisa melihat kamera Divisi B sama sekali di seluruh fitur (dashboard, daftar, live view).</li>
+        </ul>
     </div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-pencil me-2"></i>Edit Hak Akses</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Klik <span class="mock-btn warning"><i class="bi bi-pencil"></i> Edit</span>, ubah modul atau grup yang diizinkan, lalu <span class="mock-btn primary">Simpan</span>. Perubahan langsung berlaku untuk semua pengguna dengan role tersebut.</div></div>
 </div>
 
-{{-- ─────────────────────────── RINGKASAN ─────────────────────────── --}}
-<div class="card shadow-sm mb-6" style="background:linear-gradient(135deg,#1e1e2d,#2b2b40);border:none">
-    <div class="card-body p-6">
-        <h5 class="fw-bold text-white mb-4"><i class="bi bi-lightning-charge-fill me-2 text-warning"></i>Ringkasan Alur</h5>
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-            <span class="badge badge-light-primary fs-7 px-3 py-2">1 · Siapkan SN & Kode</span>
-            <i class="bi bi-arrow-right text-muted"></i>
-            <span class="badge badge-light-success fs-7 px-3 py-2">2 · Daftarkan ke Cloud</span>
-            <i class="bi bi-arrow-right text-muted"></i>
-            <span class="badge badge-light-info fs-7 px-3 py-2">3 · Sinkronisasi</span>
-            <i class="bi bi-arrow-right text-muted"></i>
-            <span class="badge badge-light-warning fs-7 px-3 py-2">4 · Import & Atur</span>
-            <i class="bi bi-arrow-right text-muted"></i>
-            <span class="badge badge-light-danger fs-7 px-3 py-2">5 · Live View</span>
-        </div>
+{{-- AKUN EZVIZ --}}
+<div class="tab-pane fade" id="tab-ezviz">
+    <div class="section-badge"><i class="bi bi-cloud"></i> MASTER DATA — AKUN EZVIZ & KAMERA</div>
+    <h5 class="fw-bold mb-4">Mengelola Akun Cloud & Menambah Kamera</h5>
+    <div class="guide-info p-4 mb-5">Akun EZVIZ adalah akun cloud yang digunakan untuk berkomunikasi dengan kamera. Alur penambahan kamera: <strong>Daftarkan ke Cloud → Sinkronisasi → Import ke Sistem</strong>.</div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-card-list me-2"></i>Persiapan — Info dari Stiker Kamera</h6>
+    <div class="row g-3 mb-5">
+        <div class="col-md-6"><div class="card border border-dashed border-primary h-100"><div class="card-body">
+            <h6 class="fw-bold text-primary mb-2"><i class="bi bi-upc-scan me-2"></i>Serial Number (SN)</h6>
+            <p class="text-muted fs-7 mb-2">Kode unik identitas kamera di stiker badan kamera. Biasanya 9 karakter huruf besar + angka.</p>
+            <div class="bg-dark text-success text-center rounded p-2 fw-bold" style="letter-spacing:3px;font-family:monospace">ABC123456</div>
+        </div></div></div>
+        <div class="col-md-6"><div class="card border border-dashed border-warning h-100"><div class="card-body">
+            <h6 class="fw-bold text-warning mb-2"><i class="bi bi-key me-2"></i>Verification Code</h6>
+            <p class="text-muted fs-7 mb-2">Kode keamanan 6 karakter di stiker kamera. Disebut juga <em>Valid Code</em>.</p>
+            <div class="bg-dark text-warning text-center rounded p-2 fw-bold" style="letter-spacing:3px;font-family:monospace">ABCD12</div>
+        </div></div></div>
     </div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-person-plus me-2"></i>Menambah Akun EZVIZ</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Buka <strong>Master Data → Akun EZVIZ</strong>, klik <span class="mock-btn primary"><i class="bi bi-plus-circle"></i> Tambah Akun</span>.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start mb-4"><div class="step-num">2</div><div>Isi <strong>Nama Akun</strong>, <strong>Email/Username EZVIZ</strong>, dan <strong>Password</strong>, lalu klik <span class="mock-btn primary">Simpan</span>.</div></div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-camera-video-fill me-2"></i>Menambah Kamera ke Akun Cloud</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Pada kartu akun, klik tombol <span class="mock-btn primary"><i class="bi bi-plus-circle"></i></span> (ikon plus biru).</div></div>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">2</div><div>Isi <strong>Serial Number</strong> dan <strong>Verification Code</strong> dari stiker kamera fisik.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start mb-4"><div class="step-num">3</div><div>Klik <span class="mock-btn primary">Tambahkan</span>. Kamera terdaftar di akun cloud EZVIZ.</div></div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-arrow-repeat me-2"></i>Sinkronisasi Kamera dari Cloud</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Klik tombol <span class="mock-btn info"><i class="bi bi-arrow-repeat"></i></span> (ikon sync ungu) pada kartu akun untuk menarik daftar kamera terbaru.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start mb-4"><div class="step-num">2</div><div>Setelah sync, klik <span class="mock-btn success"><i class="bi bi-camera-video"></i></span> untuk membuka panel <strong>Import Device</strong>.</div></div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-download me-2"></i>Import Kamera ke Sistem</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Di panel Import Device, pilih kamera dari daftar hasil sync. Kamera yang belum diimport memiliki tombol <span class="mock-btn primary" style="font-size:.7rem"><i class="bi bi-plus"></i> Tambah</span>.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">2</div><div>Isi <strong>Nama Kamera</strong> dan pilih <strong>Lokasi</strong> yang sesuai.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start mb-4"><div class="step-num">3</div><div>Klik <span class="mock-btn primary">Tambahkan ke Sistem</span>. Kamera muncul di <strong>CCTV → Daftar CCTV</strong>.</div></div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-key me-2"></i>Refresh Token</h6>
+    <div class="step-row d-flex gap-3 align-items-start mb-3"><div class="step-num">1</div><div>Token EZVIZ berlaku <strong>7 hari</strong>. Jika live stream gagal, klik <span class="mock-btn warning"><i class="bi bi-arrow-clockwise"></i> Refresh</span> pada kartu akun.</div></div>
+    <div class="guide-tip p-3"><i class="bi bi-lightbulb me-2 text-warning"></i>Admin dapat menjalankan perintah artisan <code>ezviz:refresh-tokens</code> untuk memperbarui token semua akun sekaligus.</div>
 </div>
 
-{{-- ─────────────────────────── FAQ ─────────────────────────── --}}
-<div id="faq" class="card shadow-sm mb-6">
-    <div class="card-header border-0 pt-6">
-        <h5 class="fw-bold"><i class="bi bi-question-circle me-2 text-warning"></i>Pertanyaan Umum (FAQ)</h5>
-    </div>
-    <div class="card-body px-6 pb-6">
-        <div class="accordion" id="accordionFaq">
+{{-- PENGATURAN --}}
+<div class="tab-pane fade" id="tab-pengaturan">
+    <div class="section-badge"><i class="bi bi-gear"></i> PENGATURAN SISTEM</div>
+    <h5 class="fw-bold mb-4">Pengaturan Informasi Sistem</h5>
+    <div class="guide-info p-4 mb-5">Halaman ini digunakan untuk mengatur identitas dan branding aplikasi yang tampil di seluruh halaman.</div>
 
-            <div class="accordion-item border-bottom">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-                        Kamera sudah terdaftar tapi tidak muncul saat sinkronisasi?
-                    </button>
-                </h2>
-                <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#accordionFaq">
-                    <div class="accordion-body text-muted fs-7">
-                        Pastikan kamera <strong>online</strong> dan terhubung ke internet. Coba klik tombol <strong>Refresh Token</strong> <i class="bi bi-arrow-repeat"></i> pada kartu akun di Master Data, lalu ulangi sinkronisasi.
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item border-bottom">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
-                        Muncul pesan "Device sudah terdaftar di akun lain"?
-                    </button>
-                </h2>
-                <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#accordionFaq">
-                    <div class="accordion-body text-muted fs-7">
-                        Kamera tersebut masih terikat ke akun cloud lain. Hubungi administrator untuk melepaskan kamera dari akun sebelumnya, atau lakukan <em>factory reset</em> pada kamera (tekan tombol reset di badan kamera selama 10 detik).
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item border-bottom">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
-                        Live View tidak muncul / layar hitam?
-                    </button>
-                </h2>
-                <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#accordionFaq">
-                    <div class="accordion-body text-muted fs-7">
-                        <ul class="mb-0">
-                            <li>Pastikan browser yang digunakan adalah <strong>Chrome</strong> atau <strong>Edge</strong> versi terbaru.</li>
-                            <li>Pastikan kamera sedang <strong>online</strong>.</li>
-                            <li>Coba klik kembali tombol <strong>Play / EZOPEN</strong> di halaman detail kamera.</li>
-                            <li>Refresh token akun akses dari menu Master Data jika sudah lama tidak digunakan.</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item border-bottom">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
-                        Bagaimana cara menghapus kamera dari sistem?
-                    </button>
-                </h2>
-                <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#accordionFaq">
-                    <div class="accordion-body text-muted fs-7">
-                        Buka <strong>CCTV → Daftar CCTV</strong>, temukan kamera, lalu klik tombol <span class="mock-btn" style="font-size:.7rem;background:#f1416c;color:#fff;border-color:#f1416c"><i class="bi bi-trash"></i> Hapus</span>. Ini hanya menghapus data dari sistem lokal — perangkat fisik tetap terdaftar di platform cloud.
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item border-bottom">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
-                        Berapa banyak kamera yang bisa ditambahkan?
-                    </button>
-                </h2>
-                <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#accordionFaq">
-                    <div class="accordion-body text-muted fs-7">
-                        Tidak ada batas maksimal dari sisi aplikasi ini. Batas berlaku sesuai dengan kapasitas akun platform cloud yang dikonfigurasi oleh administrator sistem.
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">
-                        Hak akses apa yang diperlukan untuk menambah kamera?
-                    </button>
-                </h2>
-                <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#accordionFaq">
-                    <div class="accordion-body text-muted fs-7">
-                        Untuk menambah kamera diperlukan akses ke modul <strong>Master Data</strong> (registrasi ke cloud dan import device) serta modul <strong>CCTV</strong> (sinkronisasi dan manajemen). Hubungi administrator sistem untuk pengaturan hak akses.
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-pencil-square me-2"></i>Mengubah Pengaturan</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Buka <strong>Pengaturan → Pengaturan Sistem</strong>.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">2</div><div>Ubah data yang diinginkan:
+        <ul class="text-muted fs-7 mt-1 mb-0">
+            <li><strong>Nama Aplikasi</strong> — tampil di judul browser</li>
+            <li><strong>Nama Instansi, Alamat, Kota, Telepon, Email, Website</strong></li>
+            <li><strong>Footer</strong> — teks di bagian bawah setiap halaman</li>
+            <li><strong>Logo & Icon</strong> — upload file gambar (jpeg/png/webp, maks 2MB)</li>
+        </ul>
+    </div></div>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">3</div><div>Klik <span class="mock-btn primary">Simpan</span>. Perubahan langsung berlaku di seluruh halaman.</div></div>
 </div>
+
+{{-- LOG AKTIVITAS --}}
+<div class="tab-pane fade" id="tab-log">
+    <div class="section-badge"><i class="bi bi-journal-text"></i> LOG AKTIVITAS</div>
+    <h5 class="fw-bold mb-4">Memantau Aktivitas Pengguna</h5>
+    <div class="guide-info p-4 mb-5">Log Aktivitas mencatat semua aksi penting: login, akses live view, perubahan data, dll. Berguna untuk audit dan tracing masalah.</div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-table me-2"></i>Membaca Log</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Buka <strong>Pengaturan → Log Aktivitas</strong>. Tabel menampilkan: Waktu, Username, Aksi, Modul, dan Detail.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start mb-4"><div class="step-num">2</div><div>Gunakan kolom <strong>Cari</strong> di kanan atas untuk memfilter berdasarkan kata kunci.</div></div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-funnel me-2"></i>Filter per Pengguna <span class="role-badge role-su ms-2">superuser only</span></h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Superuser melihat log <strong>semua pengguna</strong>. Dropdown <strong>Filter Pengguna</strong> di kanan atas bisa diketik untuk mencari, lalu dipilih.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start mb-4"><div class="step-num">2</div><div>Tabel otomatis difilter. Pilih <em>"Semua Pengguna"</em> untuk kembali ke tampilan penuh.</div></div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-person-circle me-2"></i>Melihat Info Pengguna dari Log</h6>
+    <div class="step-row d-flex gap-3 align-items-start mb-3"><div class="step-num">1</div><div>Klik nama <strong>username</strong> (berwarna biru) pada baris manapun. Muncul modal berisi info lengkap: nama, role, status online, email, login terakhir.</div></div>
+    <div class="guide-tip p-3"><i class="bi bi-lightbulb me-2 text-warning"></i>Non-superuser hanya bisa melihat log aktivitasnya <strong>sendiri</strong> — log pengguna lain tersembunyi otomatis.</div>
+</div>
+
+{{-- PROFIL --}}
+<div class="tab-pane fade" id="tab-profil">
+    <div class="section-badge"><i class="bi bi-person-circle"></i> PROFIL & KEAMANAN AKUN</div>
+    <h5 class="fw-bold mb-4">Mengelola Profil & Password</h5>
+    <div class="guide-info p-4 mb-5">Setiap pengguna dapat memperbarui data profil dan mengganti password kapan saja melalui halaman Profil.</div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-person-gear me-2"></i>Update Profil</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Klik avatar/nama di sidebar bawah kiri, pilih menu profil, atau akses langsung <strong>/panel/profile</strong>.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">2</div><div>Ubah <strong>Nama Lengkap</strong>, <strong>Email</strong>, dan/atau upload <strong>Foto Profil</strong> (jpeg/png/webp, maks 2MB).</div></div>
+    <div class="step-row d-flex gap-3 align-items-start mb-4"><div class="step-num">3</div><div>Klik <span class="mock-btn primary">Simpan Perubahan</span>. Nama dan foto di sidebar langsung diperbarui.</div></div>
+
+    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-shield-lock me-2"></i>Ganti Password</h6>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">1</div><div>Di halaman Profil, gulir ke bagian <strong>Ganti Password</strong>.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start"><div class="step-num">2</div><div>Isi <strong>Password Lama</strong>, <strong>Password Baru</strong> (min. 6 karakter), dan <strong>Konfirmasi Password Baru</strong>.</div></div>
+    <div class="step-row d-flex gap-3 align-items-start mb-3"><div class="step-num">3</div><div>Klik <span class="mock-btn primary">Ubah Password</span>. Gunakan password baru untuk login berikutnya.</div></div>
+    <div class="guide-warn p-3"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Jika lupa password, minta <strong>superuser</strong> untuk mereset melalui menu <strong>Master Data → Pengguna → Edit</strong>.</div>
+</div>
+
+</div>{{-- end tab-content --}}
