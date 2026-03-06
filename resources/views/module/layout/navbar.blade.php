@@ -19,7 +19,7 @@
         </div>
         <!--begin::Partner logos-->
         <div class="d-none d-lg-flex align-items-center justify-content-between flex-lg-grow-1 px-6">
-            <img src="{{ asset('assets/img/PLN/DANA ANTARA.webp') }}" alt="Danantara" style="height: 56px; object-fit: contain;">
+            <img src="{{ asset('assets/img/PLN/DANA ANTARA.webp') }}" alt="Danantara" style="height: 80px; object-fit: contain;">
             <img src="{{ asset('assets/img/PLN/HSSE_PLN.jpeg') }}" alt="HSSE PLN" style="height: 56px; object-fit: contain;">
             <img src="{{ asset('assets/img/PLN/PLN.png') }}" alt="PLN" style="height: 56px; object-fit: contain;">
         </div>
