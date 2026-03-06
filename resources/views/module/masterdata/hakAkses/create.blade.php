@@ -113,13 +113,13 @@ document.querySelectorAll('.pm-check').forEach(pmChk => {
         });
     });
 });
-// When all child modules checked, auto-check parent
+// When any child module is checked, auto-check parent; uncheck parent only when none checked
 document.querySelectorAll('.m-check').forEach(mChk => {
     mChk.addEventListener('change', function() {
         const pmId = this.dataset.pm;
-        const allChecked = [...document.querySelectorAll(`.m-check[data-pm="${pmId}"]`)].every(c => c.checked);
+        const anyChecked = [...document.querySelectorAll(`.m-check[data-pm="${pmId}"]`)].some(c => c.checked);
         const pmChk = document.querySelector(`.pm-check[data-pm="${pmId}"]`);
-        if (pmChk) pmChk.checked = allChecked;
+        if (pmChk) pmChk.checked = anyChecked;
     });
 });
 </script>

@@ -132,9 +132,9 @@ document.querySelectorAll('.pm-check').forEach(pmChk => {
 document.querySelectorAll('.m-check').forEach(mChk => {
     mChk.addEventListener('change', function() {
         const pmId = this.dataset.pm;
-        const allChecked = [...document.querySelectorAll(`.m-check[data-pm="${pmId}"]`)].every(c => c.checked);
+        const anyChecked = [...document.querySelectorAll(`.m-check[data-pm="${pmId}"]`)].some(c => c.checked);
         const pmChk = document.querySelector(`.pm-check[data-pm="${pmId}"]`);
-        if (pmChk) pmChk.checked = allChecked;
+        if (pmChk) pmChk.checked = anyChecked;
     });
 });
 </script>

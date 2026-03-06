@@ -64,10 +64,6 @@ class PengaturanController extends Controller
 
     public function logAktivitas(Request $request)
     {
-        if ($request->ajax()) {
-            return DataTables::of(DB::table('cv_log_aktivitas')->orderBy('created_time', 'desc'))->make(true);
-        }
-
         $data            = $this->getCommonData();
         $data['title']   = 'Log Aktivitas';
         $data['content'] = 'module.pengaturan.logAktivitas';
@@ -76,6 +72,8 @@ class PengaturanController extends Controller
 
     public function getLogAktivitas(Request $request)
     {
-        return DataTables::of(DB::table('cv_log_aktivitas')->orderBy('created_time', 'desc'))->make(true);
+        return DataTables::of(DB::table('cv_log_aktivitas')->orderBy('created_time', 'desc'))
+            ->addIndexColumn()
+            ->make(true);
     }
 }

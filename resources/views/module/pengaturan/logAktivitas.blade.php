@@ -32,7 +32,7 @@ $(document).ready(function() {
         },
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-            { data: 'created_at', name: 'created_at' },
+            { data: 'created_time', name: 'created_time' },
             { data: 'username', name: 'username' },
             { data: 'aksi', name: 'aksi' },
             { data: 'modul', name: 'modul' },

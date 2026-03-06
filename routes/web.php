@@ -65,12 +65,6 @@ Route::middleware(['auth'])->prefix('panel')->group(function () {
             Route::get('/detailCCTV/{param1}', [CCTVController::class, 'detailCCTV'])->name('detailCCTV');
             Route::get('/liveViewGroup/{param1}', [CCTVController::class, 'liveViewGroup'])->name('liveViewGroup');
             Route::get('/liveViewLokasi/{param1}', [CCTVController::class, 'liveViewLokasi'])->name('liveViewLokasi');
-            // AJAX Endpoints
-            Route::post('/streamCCTV/{param1}', [CCTVController::class, 'streamCCTV'])->name('streamCCTV');
-            Route::post('/captureCCTV/{param1}', [CCTVController::class, 'captureCCTV'])->name('captureCCTV');
-            Route::post('/syncDevices/{param1?}', [CCTVController::class, 'syncDevices'])->name('syncDevices');
-            Route::post('/refreshToken/{param1}', [CCTVController::class, 'refreshToken'])->name('refreshToken');
-            Route::post('/importDevice', [CCTVController::class, 'importDevice'])->name('importDevice');
         });
 
         // Master Data - Pengguna
@@ -91,17 +85,31 @@ Route::middleware(['auth'])->prefix('panel')->group(function () {
             Route::any('/tambahEzvizAkun/{param1?}', [MasterDataController::class, 'tambahEzvizAkun'])->name('tambahEzvizAkun');
             Route::any('/updateEzvizAkun/{param1?}/{param2?}', [MasterDataController::class, 'updateEzvizAkun'])->name('updateEzvizAkun');
             Route::get('/hapusEzvizAkun/{param1}', [MasterDataController::class, 'hapusEzvizAkun'])->name('hapusEzvizAkun');
-            Route::post('/scrapeEzvizAppKey', [MasterDataController::class, 'scrapeEzvizAppKey'])->name('scrapeEzvizAppKey');
-            Route::post('/scrapeEzvizDevices', [MasterDataController::class, 'scrapeEzvizDevices'])->name('scrapeEzvizDevices');
-            Route::post('/addDeviceToEzviz', [MasterDataController::class, 'addDeviceToEzviz'])->name('addDeviceToEzviz');
         });
 
         // Pengaturan
         Route::prefix('pengaturan')->group(function () {
             Route::any('/pengaturanSistem/{param1?}', [PengaturanController::class, 'pengaturanSistem'])->name('pengaturanSistem');
             Route::get('/logAktivitas', [PengaturanController::class, 'logAktivitas'])->name('logAktivitas');
-            Route::post('/getLogAktivitas', [PengaturanController::class, 'getLogAktivitas'])->name('getLogAktivitas');
         });
+    });
+
+    // AJAX endpoints (auth only, no checkAccess — page access already verified by page load)
+    Route::prefix('cctv')->group(function () {
+        Route::get('/liveViewAllGroups', [CCTVController::class, 'liveViewAllGroups'])->name('liveViewAllGroups');
+        Route::post('/streamCCTV/{param1}', [CCTVController::class, 'streamCCTV'])->name('streamCCTV');
+        Route::post('/captureCCTV/{param1}', [CCTVController::class, 'captureCCTV'])->name('captureCCTV');
+        Route::post('/syncDevices/{param1?}', [CCTVController::class, 'syncDevices'])->name('syncDevices');
+        Route::post('/refreshToken/{param1}', [CCTVController::class, 'refreshToken'])->name('refreshToken');
+        Route::post('/importDevice', [CCTVController::class, 'importDevice'])->name('importDevice');
+    });
+    Route::prefix('masterData')->group(function () {
+        Route::post('/scrapeEzvizAppKey', [MasterDataController::class, 'scrapeEzvizAppKey'])->name('scrapeEzvizAppKey');
+        Route::post('/scrapeEzvizDevices', [MasterDataController::class, 'scrapeEzvizDevices'])->name('scrapeEzvizDevices');
+        Route::post('/addDeviceToEzviz', [MasterDataController::class, 'addDeviceToEzviz'])->name('addDeviceToEzviz');
+    });
+    Route::prefix('pengaturan')->group(function () {
+        Route::post('/getLogAktivitas', [PengaturanController::class, 'getLogAktivitas'])->name('getLogAktivitas');
     });
 });
 

@@ -1,71 +1,79 @@
-<div class="row g-5 g-xl-10 mb-5">
-    <!-- Stats Row 1 -->
+<!-- Stats Row: compact horizontal cards -->
+<div class="row g-4 mb-6">
     <div class="col-sm-6 col-xl-3">
-        <div class="card card-flush bgi-no-repeat bgi-size-contain bgi-position-x-end h-lg-100" style="background-color:#17c653">
-            <div class="card-header pt-5">
-                <div class="card-title d-flex flex-column">
-                    <span class="fs-2hx fw-bold text-white me-2 lh-1 ls-n2">{{ $data['totalGrupLokasi'] }}</span>
-                    <span class="text-white opacity-75 pt-1 fw-semibold fs-6">Group Lokasi</span>
+        <div class="card h-100" style="background-color:#17c653">
+            <div class="card-body d-flex align-items-center py-5 px-6">
+                <div class="me-4">
+                    <i class="bi bi-geo-alt fs-2x text-white opacity-75"></i>
                 </div>
-            </div>
-            <div class="card-body d-flex align-items-end pt-0">
-                <a href="{{ url('/panel/grupLokasi/daftarGrupLokasi') }}" class="btn btn-sm btn-white btn-color-success">Lihat Semua</a>
+                <div class="flex-grow-1">
+                    <div class="fs-2hx fw-bold text-white lh-1">{{ $data['totalGrupLokasi'] }}</div>
+                    <div class="text-white opacity-75 fw-semibold fs-7 mt-1">Group Lokasi</div>
+                </div>
+                <a href="{{ url('/panel/grupLokasi/daftarGrupLokasi') }}" class="btn btn-sm btn-white btn-color-success ms-2">
+                    <i class="bi bi-arrow-right"></i>
+                </a>
             </div>
         </div>
     </div>
     <div class="col-sm-6 col-xl-3">
-        <div class="card card-flush bgi-no-repeat bgi-size-contain bgi-position-x-end h-lg-100" style="background-color:#009ef7">
-            <div class="card-header pt-5">
-                <div class="card-title d-flex flex-column">
-                    <span class="fs-2hx fw-bold text-white me-2 lh-1 ls-n2">{{ $data['totalLokasi'] }}</span>
-                    <span class="text-white opacity-75 pt-1 fw-semibold fs-6">Lokasi</span>
+        <div class="card h-100" style="background-color:#009ef7">
+            <div class="card-body d-flex align-items-center py-5 px-6">
+                <div class="me-4">
+                    <i class="bi bi-map fs-2x text-white opacity-75"></i>
                 </div>
-            </div>
-            <div class="card-body d-flex align-items-end pt-0">
-                <a href="{{ url('/panel/lokasi/daftarLokasi') }}" class="btn btn-sm btn-white btn-color-primary">Lihat Semua</a>
+                <div class="flex-grow-1">
+                    <div class="fs-2hx fw-bold text-white lh-1">{{ $data['totalLokasi'] }}</div>
+                    <div class="text-white opacity-75 fw-semibold fs-7 mt-1">Lokasi</div>
+                </div>
+                <a href="{{ url('/panel/lokasi/daftarLokasi') }}" class="btn btn-sm btn-white btn-color-primary ms-2">
+                    <i class="bi bi-arrow-right"></i>
+                </a>
             </div>
         </div>
     </div>
     <div class="col-sm-6 col-xl-3">
-        <div class="card card-flush h-lg-100" style="background-color:#7239ea">
-            <div class="card-header pt-5">
-                <div class="card-title d-flex flex-column">
-                    <span class="fs-2hx fw-bold text-white me-2 lh-1 ls-n2">{{ $data['totalCCTV'] }}</span>
-                    <span class="text-white opacity-75 pt-1 fw-semibold fs-6">Total CCTV</span>
+        <div class="card h-100" style="background-color:#7239ea">
+            <div class="card-body d-flex align-items-center py-5 px-6">
+                <div class="me-4">
+                    <i class="bi bi-camera-video fs-2x text-white opacity-75"></i>
                 </div>
-            </div>
-            <div class="card-body d-flex align-items-end pt-0">
-                <a href="{{ url('/panel/cctv/daftarCCTV') }}" class="btn btn-sm btn-white btn-color-purple">Lihat Semua</a>
+                <div class="flex-grow-1">
+                    <div class="fs-2hx fw-bold text-white lh-1">{{ $data['totalCCTV'] }}</div>
+                    <div class="text-white opacity-75 fw-semibold fs-7 mt-1">Total CCTV</div>
+                </div>
+                <a href="{{ url('/panel/cctv/daftarCCTV') }}" class="btn btn-sm btn-white ms-2" style="color:#7239ea">
+                    <i class="bi bi-arrow-right"></i>
+                </a>
             </div>
         </div>
     </div>
     <div class="col-sm-6 col-xl-3">
-        <div class="card card-flush h-lg-100" style="background-color:#f1416c">
-            <div class="card-header pt-5">
-                <div class="card-title d-flex flex-column">
-                    <div class="d-flex align-items-center">
-                        <span class="fs-2hx fw-bold text-white me-2 lh-1 ls-n2">{{ $data['totalCCTVOnline'] }}</span>
-                        <span class="text-white opacity-50 fs-4">/{{ $data['totalCCTVOffline'] }} offline</span>
+        <div class="card h-100" style="background-color:#f1416c">
+            <div class="card-body d-flex align-items-center py-5 px-6">
+                <div class="me-4">
+                    <i class="bi bi-wifi fs-2x text-white opacity-75"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-baseline gap-2">
+                        <div class="fs-2hx fw-bold text-white lh-1">{{ $data['totalCCTVOnline'] }}</div>
+                        <div class="text-white opacity-50 fs-6">/ {{ $data['totalCCTVOffline'] }} offline</div>
                     </div>
-                    <span class="text-white opacity-75 pt-1 fw-semibold fs-6">CCTV Online / Offline</span>
+                    <div class="text-white opacity-75 fw-semibold fs-7 mt-1">CCTV Online / Offline</div>
                 </div>
-            </div>
-            <div class="card-body d-flex align-items-end pt-0">
-                <span class="badge badge-white text-danger">
-                    <i class="bi bi-wifi me-1"></i>{{ $data['totalCCTVOnline'] }} Online
-                </span>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row g-5 g-xl-10 mb-5">
+<!-- Main Content Row -->
+<div class="row g-5 mb-5">
     <!-- Group Lokasi Cards -->
     <div class="col-xl-8">
-        <div class="card card-xl-stretch mb-xl-8">
+        <div class="card">
             <div class="card-header border-0 pt-5">
                 <h3 class="card-title align-items-start flex-column">
-                    <span class="card-label fw-bold fs-3 mb-1">Group Lokasi CCTV</span>
+                    <span class="card-label fw-bold fs-4 mb-1">Group Lokasi CCTV</span>
                     <span class="text-muted mt-1 fw-semibold fs-7">Klik group untuk melihat detail lokasi</span>
                 </h3>
                 <div class="card-toolbar">
@@ -74,28 +82,30 @@
                     </a>
                 </div>
             </div>
-            <div class="card-body pt-3">
-                <div class="row g-4">
+            <div class="card-body pt-3" style="max-height: 400px; overflow-y: auto; overflow-x: hidden;">
+                <div class="row g-3">
                     @forelse($data['grupLokasi'] as $grup)
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-sm-6 col-lg-4">
                         <a href="{{ url('/panel/grupLokasi/detailGrupLokasi/' . $grup->id_group) }}"
-                           class="card cctv-card border-0 shadow-sm text-decoration-none">
-                            <div class="card-body text-center py-6">
-                                <div class="mb-3">
-                                    <span class="badge badge-light-primary fs-7 px-3 py-2">
-                                        <i class="bi bi-camera-video me-1"></i>
-                                        {{ $grup->total_cctv ?? 0 }} CCTV
-                                    </span>
+                           class="d-flex align-items-center p-4 border rounded-2 text-decoration-none bg-hover-light-primary h-100" style="transition: background .15s">
+                            <div class="me-3">
+                                <div class="w-45px h-45px rounded-2 d-flex align-items-center justify-content-center" style="background:#eef3ff">
+                                    <i class="bi bi-folder2 fs-4 text-primary"></i>
                                 </div>
-                                <h5 class="fw-bold text-dark mb-1">{{ $grup->nama_group }}</h5>
-                                <p class="text-muted fs-7 mb-0">{{ $grup->deskripsi ?? 'Klik untuk detail' }}</p>
                             </div>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="fw-bold text-dark text-truncate fs-6">{{ $grup->nama_group }}</div>
+                                <div class="text-muted fs-8 mt-1">
+                                    <i class="bi bi-camera-video me-1"></i>{{ $grup->total_cctv ?? 0 }} CCTV
+                                </div>
+                            </div>
+                            <i class="bi bi-chevron-right text-muted fs-7 ms-2"></i>
                         </a>
                     </div>
                     @empty
-                    <div class="col-12 text-center py-5 text-muted">
-                        <i class="bi bi-folder2-open fs-1 d-block mb-3"></i>
-                        Belum ada group lokasi
+                    <div class="col-12 text-center py-8 text-muted">
+                        <i class="bi bi-folder2-open fs-1 d-block mb-3 opacity-40"></i>
+                        <span class="fs-6">Belum ada group lokasi</span>
                     </div>
                     @endforelse
                 </div>
@@ -103,67 +113,62 @@
         </div>
     </div>
 
-    <!-- Stats sidebar -->
-    <div class="col-xl-4">
-        <div class="card card-xl-stretch mb-5">
-            <div class="card-header border-0 pt-5">
-                <h3 class="card-title fw-bold fs-3">Statistik Sistem</h3>
+    <!-- Right sidebar -->
+    <div class="col-xl-4 d-flex flex-column gap-5">
+        <!-- Statistik -->
+        <div class="card">
+            <div class="card-header border-0 pt-5 pb-2">
+                <h3 class="card-title fw-bold fs-5">Statistik Sistem</h3>
             </div>
-            <div class="card-body pt-0">
-                <div class="d-flex flex-stack mb-5">
-                    <div class="d-flex align-items-center me-2">
-                        <div class="symbol symbol-50px me-3">
-                            <div class="symbol-label bg-light-success">
-                                <i class="bi bi-people fs-2 text-success"></i>
-                            </div>
+            <div class="card-body pt-2 pb-4">
+                <div class="d-flex align-items-center justify-content-between py-3 border-bottom">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="w-40px h-40px rounded-2 d-flex align-items-center justify-content-center bg-light-success">
+                            <i class="bi bi-people fs-5 text-success"></i>
                         </div>
                         <div>
-                            <a href="{{ url('/panel/masterData/daftarPengguna') }}" class="fs-6 text-gray-800 text-hover-primary fw-bold">Pengguna Aktif</a>
-                            <div class="fs-7 text-muted fw-semibold mt-1">Total pengguna terdaftar</div>
+                            <a href="{{ url('/panel/masterData/daftarPengguna') }}" class="fw-bold text-dark text-hover-primary fs-7">Pengguna Aktif</a>
+                            <div class="text-muted fs-8">Total pengguna terdaftar</div>
                         </div>
                     </div>
-                    <div class="badge badge-light fw-semibold">{{ $data['totalPengguna'] }}</div>
+                    <span class="badge badge-light-success fw-bold fs-7">{{ $data['totalPengguna'] }}</span>
                 </div>
-                <div class="d-flex flex-stack mb-5">
-                    <div class="d-flex align-items-center me-2">
-                        <div class="symbol symbol-50px me-3">
-                            <div class="symbol-label bg-light-primary">
-                                <i class="bi bi-cloud fs-2 text-primary"></i>
-                            </div>
+                <div class="d-flex align-items-center justify-content-between py-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="w-40px h-40px rounded-2 d-flex align-items-center justify-content-center bg-light-primary">
+                            <i class="bi bi-cloud fs-5 text-primary"></i>
                         </div>
                         <div>
-                            <a href="{{ url('/panel/masterData/daftarEzvizAkun') }}" class="fs-6 text-gray-800 text-hover-primary fw-bold">Akun Ezviz</a>
-                            <div class="fs-7 text-muted fw-semibold mt-1">Multi-akun terdaftar</div>
+                            <a href="{{ url('/panel/masterData/daftarEzvizAkun') }}" class="fw-bold text-dark text-hover-primary fs-7">Akun Ezviz</a>
+                            <div class="text-muted fs-8">Multi-akun terdaftar</div>
                         </div>
                     </div>
-                    <div class="badge badge-light fw-semibold">{{ $data['totalEzvizAkun'] }}</div>
+                    <span class="badge badge-light-primary fw-bold fs-7">{{ $data['totalEzvizAkun'] }}</span>
                 </div>
             </div>
         </div>
 
-        <!-- Recent Log -->
-        <div class="card card-xl-stretch">
-            <div class="card-header border-0 pt-5">
-                <h3 class="card-title fw-bold fs-3">Log Aktifitas</h3>
+        <!-- Log Aktifitas -->
+        <div class="card flex-grow-1">
+            <div class="card-header border-0 pt-5 pb-2">
+                <h3 class="card-title fw-bold fs-5">Log Aktifitas</h3>
                 <div class="card-toolbar">
                     <a href="{{ url('/panel/pengaturan/logAktivitas') }}" class="btn btn-sm btn-light">Lihat Semua</a>
                 </div>
             </div>
-            <div class="card-body pt-0">
+            <div class="card-body pt-2" style="max-height: 280px; overflow-y: auto;">
                 @forelse($data['recentLog'] as $log)
-                <div class="d-flex align-items-center mb-4">
-                    <div class="symbol symbol-35px me-3">
-                        <div class="symbol-label bg-light-info">
-                            <i class="bi bi-activity text-info fs-6"></i>
-                        </div>
+                <div class="d-flex align-items-start gap-3 py-3 {{ !$loop->last ? 'border-bottom' : '' }}">
+                    <div class="w-32px h-32px rounded-circle d-flex align-items-center justify-content-center bg-light-info flex-shrink-0 mt-1">
+                        <i class="bi bi-activity text-info fs-8"></i>
                     </div>
-                    <div class="flex-grow-1">
-                        <span class="fs-7 fw-bold text-dark">{{ $log->aksi }}</span>
-                        <div class="fs-8 text-muted">{{ $log->username }} &middot; {{ \Carbon\Carbon::parse($log->created_time)->diffForHumans() }}</div>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fw-bold text-dark fs-7 text-truncate">{{ $log->aksi }}</div>
+                        <div class="text-muted fs-8">{{ $log->username }} &middot; {{ \Carbon\Carbon::parse($log->created_time)->diffForHumans() }}</div>
                     </div>
                 </div>
                 @empty
-                <div class="text-center py-3 text-muted fs-7">Belum ada aktivitas</div>
+                <div class="text-center py-4 text-muted fs-7">Belum ada aktivitas</div>
                 @endforelse
             </div>
         </div>

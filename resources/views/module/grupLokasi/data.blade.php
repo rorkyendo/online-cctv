@@ -4,7 +4,10 @@
         <h4 class="fw-bold mb-1">Daftar Group Lokasi</h4>
         <span class="text-muted fs-7">Kelola group-group lokasi CCTV Anda</span>
     </div>
-    <div>
+    <div class="d-flex gap-2">
+        <a href="{{ url('/panel/cctv/liveViewAllGroups') }}" class="btn btn-success">
+            <i class="bi bi-play-circle me-2"></i>Live Semua CCTV
+        </a>
         <a href="{{ url('/panel/grupLokasi/tambahGrupLokasi') }}" class="btn btn-primary">
             <i class="bi bi-plus-lg me-2"></i>Tambah Group
         </a>
@@ -22,11 +25,23 @@
                     </div>
                 </div>
                 <h5 class="fw-bold text-dark mb-1">{{ $grup->nama_group }}</h5>
-                <p class="text-muted fs-7 mb-4">{{ $grup->deskripsi ?? 'Tidak ada deskripsi' }}</p>
+                <p class="text-muted fs-7 mb-2">{{ $grup->deskripsi ?? 'Tidak ada deskripsi' }}</p>
+                <div class="d-flex gap-1 mb-4">
+                    <span class="badge badge-light-primary">
+                        <i class="bi bi-camera-video me-1"></i>{{ $grup->total_cctv ?? 0 }} CCTV
+                    </span>
+                    <span class="badge badge-light-info">
+                        <i class="bi bi-geo-alt me-1"></i>{{ $grup->total_lokasi ?? 0 }} Lokasi
+                    </span>
+                </div>
                 <div class="d-flex gap-2 mt-auto w-100">
                     <a href="{{ url('/panel/grupLokasi/detailGrupLokasi/' . $grup->id_group) }}"
                        class="btn btn-sm btn-primary flex-grow-1">
                         <i class="bi bi-eye me-1"></i>Detail
+                    </a>
+                    <a href="{{ url('/panel/cctv/liveViewGroup/' . $grup->id_group) }}"
+                       class="btn btn-sm btn-success flex-grow-1" title="Live View Group">
+                        <i class="bi bi-play-circle me-1"></i>Live
                     </a>
                     <a href="{{ url('/panel/grupLokasi/updateGrupLokasi/' . $grup->id_group) }}"
                        class="btn btn-sm btn-light-warning">
