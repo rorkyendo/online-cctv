@@ -572,123 +572,159 @@ def scrape_devices(email: str, password: str, login_type: str = "ezviz") -> dict
                 "debug": body_text[:500]
             }
 
-        # ── STEP 1: Klik semua "open channel" untuk expand NVR channels ──
-        # NVR device punya link "open channel" yang memunculkan sub-tabel channel
-        try:
-            open_ch_links = driver.find_elements(
-                By.XPATH,
-                "//a[contains(translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'open channel')]"
-            )
-            print(f"[SCRAPER] Ditemukan {len(open_ch_links)} NVR dengan 'open channel' link")
-            for link in open_ch_links:
-                try:
-                    driver.execute_script("arguments[0].scrollIntoView({block:'center'});", link)
-                    time.sleep(0.3)
-                    driver.execute_script("arguments[0].click();", link)
-                    time.sleep(1.5)  # beri waktu sub-tabel channel muncul
-                except Exception as _e_click:
-                    print(f"[SCRAPER] Gagal klik open channel: {_e_click}")
-        except Exception as _e_expand:
-            print(f"[SCRAPER] Error saat expand NVR channels: {_e_expand}")
+        # ── Helper: ambil direct-child rows dari tbody tabel utama ──
+        def get_main_rows():
+            tbl = driver.find_element(By.CSS_SELECTOR, "table")
+            tbody = tbl.find_element(By.CSS_SELECTOR, "tbody")
+            return tbody.find_elements(By.XPATH, "./tr")
 
-        time.sleep(1)
-
-        # ── STEP 2: Re-fetch semua rows (termasuk channel rows yang baru muncul) ──
-        all_rows = driver.find_elements(By.CSS_SELECTOR, "table tbody tr")
-        print(f"[SCRAPER] Total rows setelah expand: {len(all_rows)}")
-
-        current_parent_serial = None
-        current_parent_name   = None
-        current_parent_status = None
-        current_adding_time   = None
-
-        for row in all_rows:
-            cells = row.find_elements(By.CSS_SELECTOR, "td")
+        # ── Helper: parse info dari satu device row ──
+        def parse_device_row(row):
+            """Return dict {serial, device_type, name, adding_time, status, is_nvr, channel_no_text} atau None."""
+            cells = row.find_elements(By.XPATH, "./td")
             if len(cells) < 3:
-                continue
-
-            # ── Deteksi apakah ini row device utama atau row channel ──
-            # Row device utama: cell[0] berisi serial number (huruf+angka, mungkin + badge NVR/IPC)
-            # Row channel: cell[0] berisi nama channel, cell[1] berisi status,
-            #   cell[2] berisi channel number (angka)
-            first_cell_text = cells[0].text.strip()
-            first_lines = first_cell_text.split("\n")
+                return None
+            first_text = cells[0].text.strip()
+            first_lines = first_text.split("\n")
             first_line = first_lines[0].strip()
+            if not re.match(r'^[A-Z0-9]{6,20}$', first_line):
+                return None
+            serial = first_line
+            device_type = first_lines[1].strip() if len(first_lines) > 1 else ""
+            name = cells[1].text.strip() if len(cells) >= 2 else ""
+            name = re.sub(r'[✏\u270f\u270e]', '', name).strip()
+            adding_time = cells[2].text.strip() if len(cells) >= 3 else ""
+            status_raw = cells[3].text.strip() if len(cells) >= 4 else ""
+            status = "online" if "online" in status_raw.lower() else "offline"
+            row_text_lower = row.text.lower()
+            is_nvr = ("open channel" in row_text_lower or "close channel" in row_text_lower)
+            return {
+                "serial": serial, "device_type": device_type, "name": name,
+                "adding_time": adding_time, "status": status, "is_nvr": is_nvr,
+                "channel_no_text": cells[4].text.strip() if len(cells) >= 5 else "1",
+            }
 
-            # Cek apakah baris pertama cell[0] cocok pola serial (huruf kapital + angka, 6-20 char)
-            is_device_row = bool(re.match(r'^[A-Z0-9]{6,20}$', first_line))
-
-            if is_device_row:
-                # ── ROW DEVICE UTAMA (NVR/IPC/dll) ──
-                serial = first_line
-                device_type = first_lines[1].strip() if len(first_lines) > 1 else ""
-
-                name = cells[1].text.strip() if len(cells) >= 2 else ""
-                name = re.sub(r'[✏\u270f\u270e]', '', name).strip()
-                adding_time = cells[2].text.strip() if len(cells) >= 3 else ""
-                status_raw  = cells[3].text.strip() if len(cells) >= 4 else ""
-                status = "online" if "online" in status_raw.lower() else "offline"
-
-                # Simpan sebagai parent context untuk channel rows
-                current_parent_serial = serial
-                current_parent_name   = name
-                current_parent_status = status
-                current_adding_time   = adding_time
-
-                # Cek kolom Channel (biasanya cells[5] atau cells[6]) —
-                # Jika teks berisi "open channel" atau "close channel", ini NVR → skip device-level row
-                # Channel-channel akan muncul sebagai sub-rows
-                row_text_lower = row.text.lower()
-                if "open channel" in row_text_lower or "close channel" in row_text_lower:
-                    # NVR — channel akan diproses dari sub-rows
-                    print(f"[SCRAPER] NVR detected: {serial} ({name}) — channels akan diproses terpisah")
-                    continue
-
-                # IPC/standalone camera — langsung tambahkan
-                # Channel number
-                channel_no_text = cells[4].text.strip() if len(cells) >= 5 else "1"
+        # ── STEP 1: Scan awal — kumpulkan serial NVR & device standalone ──
+        nvr_serials = []
+        for row in get_main_rows():
+            row_class = row.get_attribute("class") or ""
+            if "ant-table-expanded-row" in row_class:
+                continue
+            info = parse_device_row(row)
+            if not info:
+                continue
+            if info["is_nvr"]:
+                nvr_serials.append(info["serial"])
+                print(f"[SCRAPER] NVR ditemukan: {info['serial']} ({info['name']})")
+            else:
+                # IPC / standalone → langsung tambah
                 try:
-                    m_ch = re.search(r'\d+', channel_no_text)
+                    m_ch = re.search(r'\d+', info["channel_no_text"])
                     ch = int(m_ch.group()) if m_ch else 1
                 except Exception:
                     ch = 1
-
                 devices.append({
-                    "serial":       serial,
-                    "name":         name,
-                    "device_type":  device_type,
-                    "adding_time":  adding_time,
-                    "status":       status,
-                    "channel_no":   ch,
+                    "serial":      info["serial"],
+                    "name":        info["name"],
+                    "device_type": info["device_type"],
+                    "adding_time": info["adding_time"],
+                    "status":      info["status"],
+                    "channel_no":  ch,
                 })
 
-            elif current_parent_serial:
-                # ── ROW CHANNEL (sub-row dari NVR) ──
-                # Struktur: Name | Device status | Channel number | Channel | Action
-                ch_name    = first_line
-                ch_name    = re.sub(r'[✏\u270f\u270e]', '', ch_name).strip()
-                ch_status_raw = cells[1].text.strip() if len(cells) >= 2 else ""
-                ch_status  = "online" if "online" in ch_status_raw.lower() else "offline"
-                ch_no_text = cells[2].text.strip() if len(cells) >= 3 else ""
+        print(f"[SCRAPER] Standalone: {len(devices)}, NVR akan di-expand: {len(nvr_serials)}")
 
-                try:
-                    m_ch = re.search(r'\d+', ch_no_text)
-                    ch_no = int(m_ch.group()) if m_ch else 1
-                except Exception:
-                    ch_no = 1
+        # ── STEP 2: Expand tiap NVR satu per satu (accordion) ──────
+        # Portal EZVIZ hanya mengizinkan 1 NVR terbuka sekaligus (accordion).
+        # Setiap klik "open channel" akan menutup NVR yang sebelumnya terbuka.
+        # Jadi kita expand → parse → lanjut ke NVR berikutnya.
+        for nvr_serial in nvr_serials:
+            print(f"[SCRAPER] Expanding NVR {nvr_serial}...")
 
-                # Nama: gabungkan nama channel + nama NVR parent
-                display_name = ch_name if ch_name else f"Channel {ch_no}"
+            # Cari row NVR ini dan klik "open channel"
+            clicked = False
+            for row in get_main_rows():
+                row_class = row.get_attribute("class") or ""
+                if "ant-table-expanded-row" in row_class:
+                    continue
+                cells = row.find_elements(By.XPATH, "./td")
+                if len(cells) < 6:
+                    continue
+                first_text = cells[0].text.strip().split("\n")[0].strip()
+                if first_text != nvr_serial:
+                    continue
+                # Ditemukan — cek apakah sudah terbuka
+                ch_cell_text = cells[5].text.strip().lower()
+                if "open channel" in ch_cell_text:
+                    try:
+                        link = cells[5].find_element(By.CSS_SELECTOR, "a")
+                        driver.execute_script(
+                            "arguments[0].scrollIntoView({block:'center'});", link
+                        )
+                        time.sleep(0.3)
+                        driver.execute_script("arguments[0].click();", link)
+                        clicked = True
+                    except Exception as _e:
+                        print(f"[SCRAPER] Gagal klik open channel {nvr_serial}: {_e}")
+                elif "close channel" in ch_cell_text:
+                    clicked = True  # sudah terbuka
+                break
 
-                devices.append({
-                    "serial":        current_parent_serial,
-                    "name":          display_name,
-                    "device_type":   "NVR-CH",
-                    "parent_name":   current_parent_name,
-                    "adding_time":   current_adding_time or "",
-                    "status":        ch_status,
-                    "channel_no":    ch_no,
-                })
+            if not clicked:
+                print(f"[SCRAPER] NVR {nvr_serial} tidak bisa di-expand, skip")
+                continue
+
+            time.sleep(2)  # tunggu sub-tabel channel muncul
+
+            # Parse channel dari expanded row yang muncul di bawah NVR row
+            nvr_info = None
+            for row in get_main_rows():
+                row_class = row.get_attribute("class") or ""
+
+                if "ant-table-expanded-row" in row_class:
+                    if nvr_info and nvr_info["serial"] == nvr_serial:
+                        # Ini expanded row milik NVR target
+                        try:
+                            sub_tables = row.find_elements(By.CSS_SELECTOR, "table")
+                            for sub_tbl in sub_tables:
+                                sub_rows = sub_tbl.find_elements(By.CSS_SELECTOR, "tbody tr")
+                                for sr in sub_rows:
+                                    ch_cells = sr.find_elements(By.XPATH, "./td")
+                                    if len(ch_cells) < 3:
+                                        continue
+                                    ch_name = ch_cells[0].text.strip()
+                                    ch_name = re.sub(r'[✏\u270f\u270e]', '', ch_name).strip()
+                                    if not ch_name:
+                                        continue
+                                    ch_status_raw = ch_cells[1].text.strip()
+                                    ch_status = "online" if "online" in ch_status_raw.lower() else "offline"
+                                    ch_no_text = ch_cells[2].text.strip()
+                                    try:
+                                        m_ch = re.search(r'\d+', ch_no_text)
+                                        ch_no = int(m_ch.group()) if m_ch else 1
+                                    except Exception:
+                                        ch_no = 1
+                                    devices.append({
+                                        "serial":      nvr_serial,
+                                        "name":        ch_name,
+                                        "device_type": "NVR-CH",
+                                        "parent_name": nvr_info["name"],
+                                        "adding_time": nvr_info["adding_time"],
+                                        "status":      ch_status,
+                                        "channel_no":  ch_no,
+                                    })
+                        except Exception as _e_sub:
+                            print(f"[SCRAPER] Error parsing channels {nvr_serial}: {_e_sub}")
+                    nvr_info = None
+                    continue
+
+                # Track device row terakhir sebelum expanded row
+                info = parse_device_row(row)
+                if info:
+                    nvr_info = info
+
+            ch_count = len([d for d in devices if d.get("serial") == nvr_serial and d.get("device_type") == "NVR-CH"])
+            print(f"[SCRAPER]   → {ch_count} channel ditemukan")
 
         return {
             "success": True,
@@ -871,9 +907,9 @@ def scrape_devices_route():
         future = ex.submit(scrape_devices, email, password, login_type)
         ex.shutdown(wait=False)
         try:
-            result = future.result(timeout=90)
+            result = future.result(timeout=180)
         except concurrent.futures.TimeoutError:
-            result = {"success": False, "message": "Scraping timeout (>90s). Chrome mungkin tidak bisa memuat halaman EZVIZ."}
+            result = {"success": False, "message": "Scraping timeout (>180s). Chrome mungkin tidak bisa memuat halaman EZVIZ."}
     finally:
         scrape_lock.release()
 

@@ -472,10 +472,12 @@ function doImport() {
         btn.innerHTML = '<i class="bi bi-plus-circle me-2"></i>Tambahkan ke Sistem';
 
         if (data.success) {
-            const serial = document.getElementById('importSerial').value;
-            const cell = document.getElementById('action-' + serial);
+            const serial    = document.getElementById('importSerial').value;
+            const channelNo = document.getElementById('importChannelNo').value;
+            const rowKey    = serial + '-ch' + channelNo;
+            const cell = document.getElementById('action-' + rowKey);
             if (cell) cell.innerHTML = '<span class="badge badge-light-success"><i class="bi bi-check-circle me-1"></i>Sudah ditambahkan</span>';
-            const row = document.getElementById('row-' + serial);
+            const row = document.getElementById('row-' + rowKey);
             if (row) row.classList.add('table-light');
 
             backToDeviceList();

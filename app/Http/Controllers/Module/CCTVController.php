@@ -9,7 +9,6 @@ use App\Models\EzvizModel;
 use App\Helpers\LogHelper;
 use App\Helpers\AccessHelper;
 use Illuminate\Support\Facades\DB;
-use Yajra\DataTables\DataTables;
 
 class CCTVController extends Controller
 {
@@ -25,27 +24,6 @@ class CCTVController extends Controller
     // -------------------------------------------------------
     public function daftarCCTV(Request $request)
     {
-        if ($request->ajax()) {
-            $allowedGroupIds = AccessHelper::getAllowedGroupIds();
-
-            $query = DB::table('cv_cctv')
-                ->join('cv_lokasi', 'cv_cctv.id_lokasi', '=', 'cv_lokasi.id_lokasi')
-                ->join('cv_lokasi_group', 'cv_lokasi.id_group', '=', 'cv_lokasi_group.id_group')
-                ->join('cv_ezviz_akun', 'cv_cctv.id_ezviz_akun', '=', 'cv_ezviz_akun.id_ezviz_akun')
-                ->select(
-                    'cv_cctv.*',
-                    'cv_lokasi.nama_lokasi',
-                    'cv_lokasi_group.nama_group',
-                    'cv_ezviz_akun.nama_akun as nama_ezviz'
-                );
-
-            if ($allowedGroupIds !== null) {
-                $query->whereIn('cv_lokasi_group.id_group', $allowedGroupIds);
-            }
-
-            return DataTables::of($query)->make(true);
-        }
-
         $data            = $this->getCommonData();
         $data['title']   = 'Daftar CCTV';
         $data['content'] = 'module.cctv.data';
@@ -109,6 +87,17 @@ class CCTVController extends Controller
             $lokasi = GeneralModel::getByIdGeneral('cv_lokasi', 'first', 'id_lokasi', $request->id_lokasi);
             if ($lokasi && !AccessHelper::cekCctvGroupAkses($lokasi->id_group)) {
                 session()->flash('error', 'Anda tidak memiliki akses ke lokasi ini!');
+                return redirect()->back()->withInput();
+            }
+
+            // Cek duplikat serial + channel di akun yang sama
+            $dupExists = DB::table('cv_cctv')
+                ->where('id_ezviz_akun', $request->id_ezviz_akun)
+                ->where('device_serial', strtoupper($request->device_serial))
+                ->where('channel_no', intval($request->channel_no))
+                ->exists();
+            if ($dupExists) {
+                session()->flash('error', 'CCTV dengan serial ' . strtoupper($request->device_serial) . ' channel ' . $request->channel_no . ' sudah ada di sistem untuk akun ini!');
                 return redirect()->back()->withInput();
             }
 
@@ -496,16 +485,18 @@ class CCTVController extends Controller
             return response()->json(['success' => false, 'message' => 'Anda tidak memiliki akses ke lokasi ini.'], 403);
         }
 
-        // Cek duplikat serial di akun yang sama
+        // Cek duplikat serial + channel di akun yang sama
+        $channelNo = intval($request->channel_no ?? 1);
         $exists = DB::table('cv_cctv')
             ->where('id_ezviz_akun', $request->id_ezviz_akun)
             ->where('device_serial', $request->device_serial)
+            ->where('channel_no', $channelNo)
             ->exists();
 
         if ($exists) {
             return response()->json([
                 'success' => false,
-                'message' => 'Device serial ' . $request->device_serial . ' sudah ada di sistem untuk akun ini.',
+                'message' => 'Device serial ' . $request->device_serial . ' channel ' . $channelNo . ' sudah ada di sistem untuk akun ini.',
             ], 409);
         }
 

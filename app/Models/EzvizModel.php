@@ -116,13 +116,16 @@ class EzvizModel
 
             // ── ezopen: construct URL directly — no API call needed ──────
             if (strtolower($protocol) === 'ezopen') {
-                $suffix = ($quality === 1) ? '.hd.live' : '.live';
+                $suffix    = ($quality === 1) ? '.hd.live' : '.live';
+                $validCode = trim($cctv->validCode ?? '');
+                // Embed verification code into URL: ezopen://CODE@open.ezviz.com/SERIAL/CH.hd.live
+                $auth      = $validCode !== '' ? "{$validCode}@" : '';
                 return [
                     'success'      => true,
-                    'url'          => "ezopen://open.ezviz.com/{$cctv->device_serial}/{$channelNo}{$suffix}",
+                    'url'          => "ezopen://{$auth}open.ezviz.com/{$cctv->device_serial}/{$channelNo}{$suffix}",
                     'access_token' => $token,
                     'api_url'      => $akun->api_url ?? 'https://isgpopen.ezvizlife.com',
-                    'validCode'    => $cctv->validCode ?? null,
+                    'validCode'    => $validCode !== '' ? $validCode : null,
                 ];
             }
 
