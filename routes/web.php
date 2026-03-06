@@ -110,6 +110,8 @@ Route::middleware(['auth'])->prefix('panel')->group(function () {
     });
     Route::prefix('pengaturan')->group(function () {
         Route::post('/getLogAktivitas', [PengaturanController::class, 'getLogAktivitas'])->name('getLogAktivitas');
+        Route::get('/searchLogUsername', [PengaturanController::class, 'searchLogUsername'])->name('searchLogUsername');
+        Route::get('/getUserInfo', [PengaturanController::class, 'getUserInfo'])->name('getUserInfo');
     });
 });
 
