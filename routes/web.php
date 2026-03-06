@@ -63,6 +63,7 @@ Route::middleware(['auth'])->prefix('panel')->group(function () {
             Route::any('/updateCCTV/{param1?}/{param2?}', [CCTVController::class, 'updateCCTV'])->name('updateCCTV');
             Route::get('/hapusCCTV/{param1}', [CCTVController::class, 'hapusCCTV'])->name('hapusCCTV');
             Route::get('/detailCCTV/{param1}', [CCTVController::class, 'detailCCTV'])->name('detailCCTV');
+            Route::get('/liveViewAllGroups', [CCTVController::class, 'liveViewAllGroups'])->name('liveViewAllGroups');
             Route::get('/liveViewGroup/{param1}', [CCTVController::class, 'liveViewGroup'])->name('liveViewGroup');
             Route::get('/liveViewLokasi/{param1}', [CCTVController::class, 'liveViewLokasi'])->name('liveViewLokasi');
         });
@@ -96,7 +97,6 @@ Route::middleware(['auth'])->prefix('panel')->group(function () {
 
     // AJAX endpoints (auth only, no checkAccess — page access already verified by page load)
     Route::prefix('cctv')->group(function () {
-        Route::get('/liveViewAllGroups', [CCTVController::class, 'liveViewAllGroups'])->name('liveViewAllGroups');
         Route::post('/streamCCTV/{param1}', [CCTVController::class, 'streamCCTV'])->name('streamCCTV');
         Route::post('/captureCCTV/{param1}', [CCTVController::class, 'captureCCTV'])->name('captureCCTV');
         Route::post('/syncDevices/{param1?}', [CCTVController::class, 'syncDevices'])->name('syncDevices');
