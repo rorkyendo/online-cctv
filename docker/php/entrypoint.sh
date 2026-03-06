@@ -28,9 +28,12 @@ chmod -R 775 \
     "$BASE/storage" \
     "$BASE/bootstrap/cache" 2>/dev/null || true
 
+# Force Laravel log channel ke docker (file + stderr) di container
+export LOG_CHANNEL="${LOG_CHANNEL:-docker}"
+
 # Cache config/routes/views jika APP_KEY sudah diset
 if [ -n "${APP_KEY:-}" ]; then
-    echo "[entrypoint] Caching Laravel config..."
+    echo "[entrypoint] Caching Laravel config (LOG_CHANNEL=$LOG_CHANNEL)..."
     su-exec www php "$BASE/artisan" config:cache  2>/dev/null || true
     su-exec www php "$BASE/artisan" route:cache   2>/dev/null || true
     su-exec www php "$BASE/artisan" view:cache    2>/dev/null || true
