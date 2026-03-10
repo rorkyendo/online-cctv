@@ -59,8 +59,8 @@
                     <div class="mb-5">
                         <label class="form-label fw-semibold">Stream Type</label>
                         <select name="stream_type" class="form-select">
-                            <option value="hd" {{ old('stream_type') == 'hd' ? 'selected' : '' }}>HD (High Definition)</option>
-                            <option value="sd" {{ old('stream_type') == 'sd' ? 'selected' : '' }}>SD (Standard Definition)</option>
+                            <option value="1" {{ old('stream_type', '1') == '1' ? 'selected' : '' }}>HD (High Definition)</option>
+                            <option value="2" {{ old('stream_type') == '2' ? 'selected' : '' }}>SD (Standard Definition)</option>
                         </select>
                     </div>
                     <div class="mb-5">

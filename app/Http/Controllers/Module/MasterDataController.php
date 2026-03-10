@@ -639,7 +639,8 @@ class MasterDataController extends Controller
             return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
         }
 
-        $result = $this->ezviz->addDeviceToAccount(
+        $ezviz = new EzvizModel();
+        $result = $ezviz->addDeviceToAccount(
             $request->id_ezviz_akun,
             $request->device_serial,
             $request->device_code

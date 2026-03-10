@@ -56,8 +56,8 @@
                     <div class="mb-5">
                         <label class="form-label fw-semibold">Stream Type</label>
                         <select name="stream_type" class="form-select">
-                            <option value="hd" {{ ($data['cctv']->stream_type ?? 'hd') == 'hd' ? 'selected' : '' }}>HD</option>
-                            <option value="sd" {{ ($data['cctv']->stream_type ?? '') == 'sd' ? 'selected' : '' }}>SD</option>
+                            <option value="1" {{ ($data['cctv']->stream_type ?? 1) == 1 ? 'selected' : '' }}>HD</option>
+                            <option value="2" {{ ($data['cctv']->stream_type ?? 1) == 2 ? 'selected' : '' }}>SD</option>
                         </select>
                     </div>
                     <div class="mb-5">
