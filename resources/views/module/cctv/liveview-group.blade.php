@@ -140,11 +140,9 @@
     background: #000;
     z-index: 9999;
     padding: 8px;
-    display: flex;
-    flex-direction: column;
+    overflow-y: auto;
 }
 .lv-wrapper.fullscreen-active .lv-toolbar { border-radius: 6px; }
-.lv-wrapper.fullscreen-active .lv-grid    { flex: 1; overflow: auto; }
 
 /* ── Responsive tweaks ────────────────────────────────────── */
 @media (max-width: 768px) {
@@ -638,11 +636,14 @@ document.getElementById('btnFullscreen').addEventListener('click', () => {
     }
 });
 document.addEventListener('fullscreenchange', () => {
+    const wrapper = document.getElementById('lvWrapper');
     const btn  = document.getElementById('btnFullscreen');
     const icon = btn.querySelector('i');
     if (document.fullscreenElement) {
+        wrapper.classList.add('fullscreen-active');
         icon.className = 'bi bi-fullscreen-exit';
     } else {
+        wrapper.classList.remove('fullscreen-active');
         icon.className = 'bi bi-fullscreen';
     }
 });

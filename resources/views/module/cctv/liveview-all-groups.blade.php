@@ -171,11 +171,9 @@
     background: #000;
     z-index: 9999;
     padding: 8px;
-    display: flex;
-    flex-direction: column;
+    overflow-y: auto;
 }
 .lv-wrapper.fullscreen-active .lv-toolbar { border-radius: 6px; }
-.lv-wrapper.fullscreen-active .lv-grid    { flex: 1; overflow: auto; }
 
 @media (max-width: 768px) {
     .lv-grid.cols-3, .lv-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
@@ -639,8 +637,15 @@ document.getElementById('btnFullscreen').addEventListener('click', () => {
     }
 });
 document.addEventListener('fullscreenchange', () => {
+    const wrapper = document.getElementById('lvWrapper');
     const icon = document.querySelector('#btnFullscreen i');
-    if (icon) icon.className = document.fullscreenElement ? 'bi bi-fullscreen-exit' : 'bi bi-fullscreen';
+    if (document.fullscreenElement) {
+        wrapper.classList.add('fullscreen-active');
+        if (icon) icon.className = 'bi bi-fullscreen-exit';
+    } else {
+        wrapper.classList.remove('fullscreen-active');
+        if (icon) icon.className = 'bi bi-fullscreen';
+    }
 });
 
 document.addEventListener('keydown', e => {
