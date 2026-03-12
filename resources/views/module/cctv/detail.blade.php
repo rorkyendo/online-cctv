@@ -172,6 +172,90 @@
                 </a>
             </div>
         </div>
+
+        {{-- PTZ Control --}}
+        <div class="card shadow-sm mt-5" id="ptz-card">
+            <div class="card-header border-0 pt-5">
+                <h3 class="card-title fw-bold">
+                    <i class="bi bi-joystick me-2 text-primary"></i>PTZ Control
+                </h3>
+                <div class="card-toolbar">
+                    <span class="badge badge-light fs-8" id="ptz-status-badge">Siap</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <style>
+                .ptz-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, 48px);
+                    grid-template-rows: repeat(3, 48px);
+                    gap: 4px;
+                    justify-content: center;
+                    margin-bottom: 12px;
+                }
+                .ptz-btn {
+                    width: 48px; height: 48px;
+                    border: none;
+                    border-radius: 8px;
+                    background: #f1f3f5;
+                    color: #3f4254;
+                    font-size: 1rem;
+                    cursor: pointer;
+                    display: flex; align-items: center; justify-content: center;
+                    transition: background .15s, transform .1s;
+                    user-select: none;
+                    -webkit-user-select: none;
+                }
+                .ptz-btn:active { background: #3e97ff; color: #fff; transform: scale(.92); }
+                .ptz-btn.center-btn {
+                    background: #e8f3ff;
+                    color: #3e97ff;
+                    font-size: .65rem;
+                    font-weight: 600;
+                }
+                .ptz-btn:disabled { opacity: .45; cursor: not-allowed; }
+                .ptz-zoom-row { display: flex; justify-content: center; gap: 8px; margin-top: 4px; }
+                .ptz-zoom-btn {
+                    flex: 1; max-width: 100px;
+                    height: 36px;
+                    border: none; border-radius: 8px;
+                    background: #f1f3f5; color: #3f4254;
+                    font-size: .8rem; font-weight: 600;
+                    cursor: pointer;
+                    display: flex; align-items: center; justify-content: center; gap: 5px;
+                    transition: background .15s;
+                    user-select: none;
+                    -webkit-user-select: none;
+                }
+                .ptz-zoom-btn:active { background: #3e97ff; color: #fff; }
+                .ptz-zoom-btn:disabled { opacity: .45; cursor: not-allowed; }
+                </style>
+
+                {{-- Directional pad --}}
+                <div class="ptz-grid">
+                    {{-- Row 1 --}}
+                    <button class="ptz-btn" data-dir="4" title="Kiri-Atas"><i class="bi bi-arrow-up-left"></i></button>
+                    <button class="ptz-btn" data-dir="0" title="Atas"><i class="bi bi-arrow-up"></i></button>
+                    <button class="ptz-btn" data-dir="5" title="Kanan-Atas"><i class="bi bi-arrow-up-right"></i></button>
+                    {{-- Row 2 --}}
+                    <button class="ptz-btn" data-dir="2" title="Kiri"><i class="bi bi-arrow-left"></i></button>
+                    <button class="ptz-btn center-btn" disabled title="Center"><i class="bi bi-dot" style="font-size:1.5rem"></i></button>
+                    <button class="ptz-btn" data-dir="3" title="Kanan"><i class="bi bi-arrow-right"></i></button>
+                    {{-- Row 3 --}}
+                    <button class="ptz-btn" data-dir="6" title="Kiri-Bawah"><i class="bi bi-arrow-down-left"></i></button>
+                    <button class="ptz-btn" data-dir="1" title="Bawah"><i class="bi bi-arrow-down"></i></button>
+                    <button class="ptz-btn" data-dir="7" title="Kanan-Bawah"><i class="bi bi-arrow-down-right"></i></button>
+                </div>
+
+                {{-- Zoom --}}
+                <div class="ptz-zoom-row">
+                    <button class="ptz-zoom-btn" data-dir="8" title="Zoom In"><i class="bi bi-zoom-in"></i> Zoom +</button>
+                    <button class="ptz-zoom-btn" data-dir="9" title="Zoom Out"><i class="bi bi-zoom-out"></i> Zoom −</button>
+                </div>
+
+                <div id="ptz-msg" class="mt-3 fs-7 text-muted" style="min-height:18px;"></div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -307,6 +391,74 @@
             showStreamError('HLS tidak didukung browser ini. Gunakan protokol EZOPEN.');
         }
     }
+
+    // ── PTZ Control ───────────────────────────────────────
+    const PTZ_CCTV_ID = {{ $cctv->id_cctv }};
+
+    function setPtzStatus(msg, color) {
+        const badge = document.getElementById('ptz-status-badge');
+        const msgEl = document.getElementById('ptz-msg');
+        badge.className = 'badge badge-light-' + (color || 'secondary') + ' fs-8';
+        badge.textContent = msg;
+        if (msgEl) msgEl.textContent = '';
+    }
+
+    function ptzSend(direction, action) {
+        return fetch(`/panel/cctv/ptzControl/${PTZ_CCTV_ID}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ direction, action, speed: 1 })
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (!d.success) {
+                const msgEl = document.getElementById('ptz-msg');
+                if (msgEl) msgEl.textContent = d.message || 'Gagal';
+                setPtzStatus('Error', 'danger');
+            }
+            return d;
+        })
+        .catch(e => {
+            const msgEl = document.getElementById('ptz-msg');
+            if (msgEl) msgEl.textContent = 'Koneksi error: ' + e.message;
+            setPtzStatus('Error', 'danger');
+        });
+    }
+
+    // Attach press-and-hold to all PTZ buttons
+    document.querySelectorAll('.ptz-btn[data-dir], .ptz-zoom-btn[data-dir]').forEach(btn => {
+        const dir = parseInt(btn.getAttribute('data-dir'));
+        let holdTimer = null;
+        let active    = false;
+
+        const start = async (e) => {
+            e.preventDefault();
+            if (active) return;
+            active = true;
+            setPtzStatus('Bergerak...', 'primary');
+            try {
+                await ptzSend(dir, 'start');
+            } catch(e) { active = false; return; }
+            // Auto-stop safety: if pointerup not fired within 5s
+            holdTimer = setTimeout(() => stop(), 5000);
+        };
+
+        const stop = async () => {
+            clearTimeout(holdTimer);
+            if (!active) return;
+            active = false;
+            await ptzSend(dir, 'stop');
+            setPtzStatus('Siap', 'success');
+        };
+
+        btn.addEventListener('pointerdown',  start);
+        btn.addEventListener('pointerup',    stop);
+        btn.addEventListener('pointerleave', stop);
+        btn.addEventListener('touchstart',   start, { passive: false });
+        btn.addEventListener('touchend',     stop);
+        btn.addEventListener('contextmenu',  e => e.preventDefault());
+    });
+    // ── End PTZ ───────────────────────────────────────────
 
     function captureCCTV(cctvId) {
         const btn = document.getElementById('btn-capture');

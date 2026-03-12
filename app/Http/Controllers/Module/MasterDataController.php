@@ -20,17 +20,48 @@ class MasterDataController extends Controller
     public function daftarPengguna(Request $request)
     {
         if ($request->ajax()) {
-            return DataTables::of(DB::table('cv_pengguna')->select('id_pengguna', 'nama_lengkap', 'username', 'email', 'hak_akses', 'status', 'last_login', 'activity_status', 'created_time'))
+            $query = DB::table('cv_pengguna')
+                ->select('id_pengguna', 'nama_lengkap', 'username', 'email', 'hak_akses', 'status', 'last_login', 'created_time');
+
+            if ($request->filter_status && $request->filter_status !== 'all') {
+                $query->where('status', $request->filter_status);
+            }
+            if ($request->filter_hak_akses && $request->filter_hak_akses !== 'all') {
+                $query->where('hak_akses', $request->filter_hak_akses);
+            }
+
+            return DataTables::of($query)
+                ->addColumn('username_html', function ($row) {
+                    return '<span class="fw-bold">' . e($row->username) . '</span>';
+                })
+                ->addColumn('hak_akses_html', function ($row) {
+                    return $row->hak_akses
+                        ? '<span class="badge badge-light-primary">' . e($row->hak_akses) . '</span>'
+                        : '<span class="text-muted">-</span>';
+                })
+                ->addColumn('status_html', function ($row) {
+                    return $row->status === 'actived'
+                        ? '<span class="badge badge-success">Aktif</span>'
+                        : '<span class="badge badge-danger">Non-Aktif</span>';
+                })
+                ->addColumn('last_login_html', function ($row) {
+                    return $row->last_login
+                        ? '<span class="text-muted fs-7">' . e($row->last_login) . '</span>'
+                        : '<span class="text-muted">-</span>';
+                })
+                ->addColumn('aksi', function ($row) {
+                    $edit   = '<a href="/panel/masterData/updatePengguna/' . $row->id_pengguna . '" class="btn btn-sm btn-icon btn-light-warning me-1" title="Edit"><i class="bi bi-pencil"></i></a>';
+                    $delete = '<a href="/panel/masterData/hapusPengguna/' . $row->id_pengguna . '" class="btn btn-sm btn-icon btn-light-danger" onclick="return confirm(\'Hapus pengguna ' . e($row->username) . '?\')" title="Hapus"><i class="bi bi-trash"></i></a>';
+                    return $edit . $delete;
+                })
+                ->rawColumns(['username_html', 'hak_akses_html', 'status_html', 'last_login_html', 'aksi'])
                 ->make(true);
         }
 
         $data = $this->getCommonData();
         $data['title'] = 'Daftar Pengguna';
         $data['content'] = 'module.masterdata.pengguna.data';
-        $data['penggunaList'] = DB::table('cv_pengguna')
-            ->select('id_pengguna', 'nama_lengkap', 'username', 'email', 'hak_akses', 'status', 'last_login', 'created_time')
-            ->orderBy('nama_lengkap')
-            ->get();
+        $data['hakAksesList'] = DB::table('cv_hak_akses')->orderBy('nama_hak_akses')->get();
         return view('module.content', ['data' => $data]);
     }
 
@@ -155,7 +186,38 @@ class MasterDataController extends Controller
     public function daftarHakAkses(Request $request)
     {
         if ($request->ajax()) {
-            return DataTables::of(DB::table('cv_hak_akses'))->make(true);
+            $query = DB::table('cv_hak_akses')
+                ->select('id_hak_akses', 'nama_hak_akses', 'deskripsi', 'modul_akses', 'cctv_group_akses', 'created_time');
+
+            if ($request->filter_cctv_group === 'semua') {
+                $query->whereNull('cctv_group_akses');
+            } elseif ($request->filter_cctv_group === 'terbatas') {
+                $query->whereNotNull('cctv_group_akses');
+            }
+
+            return DataTables::of($query)
+                ->addColumn('nama_hak_akses_html', function ($row) {
+                    return '<span class="fw-bold">' . e($row->nama_hak_akses) . '</span>'
+                        . ($row->deskripsi ? '<br><span class="text-muted fs-7">' . e($row->deskripsi) . '</span>' : '');
+                })
+                ->addColumn('modul_count_html', function ($row) {
+                    $modul  = $row->modul_akses ? json_decode($row->modul_akses, true) : null;
+                    $count  = ($modul && isset($modul['modul'])) ? count($modul['modul']) : 0;
+                    return '<span class="badge badge-light-success">' . $count . ' Modul</span>';
+                })
+                ->addColumn('cctv_group_html', function ($row) {
+                    $groups = $row->cctv_group_akses ? json_decode($row->cctv_group_akses, true) : null;
+                    return $groups === null
+                        ? '<span class="badge badge-success">Semua Group</span>'
+                        : '<span class="badge badge-warning">' . count($groups) . ' Group</span>';
+                })
+                ->addColumn('aksi', function ($row) {
+                    $edit   = '<a href="/panel/masterData/updateHakAkses/' . $row->id_hak_akses . '" class="btn btn-sm btn-icon btn-light-warning me-1" title="Edit"><i class="bi bi-pencil"></i></a>';
+                    $delete = '<a href="/panel/masterData/hapusHakAkses/' . $row->id_hak_akses . '" class="btn btn-sm btn-icon btn-light-danger" onclick="return confirm(\'Hapus hak akses ' . e($row->nama_hak_akses) . '?\')" title="Hapus"><i class="bi bi-trash"></i></a>';
+                    return $edit . $delete;
+                })
+                ->rawColumns(['nama_hak_akses_html', 'modul_count_html', 'cctv_group_html', 'aksi'])
+                ->make(true);
         }
 
         $data = $this->getCommonData();

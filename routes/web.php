@@ -100,6 +100,7 @@ Route::middleware(['auth'])->prefix('panel')->group(function () {
         Route::get('/datatablesCCTV', [CCTVController::class, 'datatablesCCTV'])->name('datatablesCCTV');
         Route::post('/streamCCTV/{param1}', [CCTVController::class, 'streamCCTV'])->name('streamCCTV');
         Route::post('/captureCCTV/{param1}', [CCTVController::class, 'captureCCTV'])->name('captureCCTV');
+        Route::post('/ptzControl/{param1}', [CCTVController::class, 'ptzControl'])->name('ptzControl');
         Route::post('/syncDevices/{param1?}', [CCTVController::class, 'syncDevices'])->name('syncDevices');
         Route::post('/refreshToken/{param1}', [CCTVController::class, 'refreshToken'])->name('refreshToken');
         Route::post('/importDevice', [CCTVController::class, 'importDevice'])->name('importDevice');

@@ -579,6 +579,39 @@ class CCTVController extends Controller
     }
 
     // -------------------------------------------------------
+    // PTZ Control (AJAX)
+    // -------------------------------------------------------
+    public function ptzControl(Request $request, $param1)
+    {
+        $cctv = DB::table('cv_cctv')->where('id_cctv', $param1)->first();
+        if (!$cctv) {
+            return response()->json(['success' => false, 'message' => 'CCTV tidak ditemukan'], 404);
+        }
+
+        $direction = $request->input('direction');
+        $action    = $request->input('action', 'start');   // 'start' | 'stop'
+        $speed     = $request->input('speed', 1);
+
+        if (!in_array($action, ['start', 'stop'])) {
+            return response()->json(['success' => false, 'message' => 'Action tidak valid'], 422);
+        }
+        if ($action === 'start' && !is_numeric($direction)) {
+            return response()->json(['success' => false, 'message' => 'Direction wajib diisi'], 422);
+        }
+
+        $result = $this->ezviz->ptzControl(
+            $cctv->id_ezviz_akun,
+            $cctv->device_serial,
+            $cctv->channel_no ?? 1,
+            intval($direction),
+            $action,
+            intval($speed)
+        );
+
+        return response()->json($result);
+    }
+
+    // -------------------------------------------------------
     // Import device dari EZVIZ portal ke sistem (AJAX)
     // -------------------------------------------------------
     public function importDevice(Request $request)

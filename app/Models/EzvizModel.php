@@ -275,6 +275,63 @@ class EzvizModel
     }
 
     /**
+     * Send PTZ control command to a device.
+     * Endpoint: PUT {api_url}/api/lapp/device/ptz/start  (or /stop)
+     *
+     * Direction codes:
+     *   0=up  1=down  2=left  3=right
+     *   4=upper-left  5=upper-right  6=lower-left  7=lower-right
+     *   8=zoom-in  9=zoom-out  10=focus-near  11=focus-far
+     *
+     * @param int    $idEzvizAkun
+     * @param string $deviceSerial
+     * @param int    $channelNo
+     * @param int    $direction   0-11
+     * @param string $action      'start' | 'stop'
+     * @param int    $speed       1-7 (only relevant for start)
+     * @return array
+     */
+    public function ptzControl($idEzvizAkun, $deviceSerial, $channelNo, $direction, $action = 'start', $speed = 4)
+    {
+        $token = $this->getValidToken($idEzvizAkun);
+        $akun  = DB::table('cv_ezviz_akun')->where('id_ezviz_akun', $idEzvizAkun)->first();
+
+        if (!$token || !$akun) {
+            return ['success' => false, 'message' => 'Token atau akun tidak valid'];
+        }
+
+        $endpoint = $action === 'stop'
+            ? $akun->api_url . '/api/lapp/device/ptz/stop'
+            : $akun->api_url . '/api/lapp/device/ptz/start';
+
+        $payload = [
+            'accessToken'  => $token,
+            'deviceSerial' => strtoupper(trim($deviceSerial)),
+            'channelNo'    => intval($channelNo),
+            'direction'    => intval($direction),
+            'speed'        => max(1, min(7, intval($speed))),
+        ];
+
+        try {
+            $response = Http::timeout(10)->asForm()->post($endpoint, $payload);
+            $result   = $response->json();
+
+            if (isset($result['code']) && $result['code'] == '200') {
+                return ['success' => true];
+            }
+
+            return [
+                'success' => false,
+                'message' => ($result['msg'] ?? $result['message'] ?? 'PTZ command failed')
+                           . ' [code=' . ($result['code'] ?? '?') . ']',
+            ];
+        } catch (\Throwable $e) {
+            Log::error('EZVIZ ptzControl error: ' . $e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Map protocol string to EZVIZ API integer.
      * 1 = ezopen, 2 = hls, 3 = rtmp, 6 = flv
      */
