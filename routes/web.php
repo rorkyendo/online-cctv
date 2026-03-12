@@ -97,6 +97,7 @@ Route::middleware(['auth'])->prefix('panel')->group(function () {
 
     // AJAX endpoints (auth only, no checkAccess — page access already verified by page load)
     Route::prefix('cctv')->group(function () {
+        Route::get('/datatablesCCTV', [CCTVController::class, 'datatablesCCTV'])->name('datatablesCCTV');
         Route::post('/streamCCTV/{param1}', [CCTVController::class, 'streamCCTV'])->name('streamCCTV');
         Route::post('/captureCCTV/{param1}', [CCTVController::class, 'captureCCTV'])->name('captureCCTV');
         Route::post('/syncDevices/{param1?}', [CCTVController::class, 'syncDevices'])->name('syncDevices');

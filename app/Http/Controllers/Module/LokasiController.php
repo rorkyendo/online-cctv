@@ -20,7 +20,10 @@ class LokasiController extends Controller
             $query = DB::table('cv_lokasi')
                 ->join('cv_lokasi_group', 'cv_lokasi.id_group', '=', 'cv_lokasi_group.id_group')
                 ->select(
-                    'cv_lokasi.*',
+                    'cv_lokasi.id_lokasi',
+                    'cv_lokasi.nama_lokasi',
+                    'cv_lokasi.deskripsi',
+                    'cv_lokasi.id_group',
                     'cv_lokasi_group.nama_group',
                     DB::raw('(SELECT COUNT(*) FROM cv_cctv WHERE cv_cctv.id_lokasi = cv_lokasi.id_lokasi) as total_cctv')
                 );
@@ -29,35 +32,56 @@ class LokasiController extends Controller
                 $query->whereIn('cv_lokasi.id_group', $allowedGroupIds);
             }
 
-            return DataTables::of($query)->make(true);
+            if ($request->filled('filter_group')) {
+                $query->where('cv_lokasi_group.id_group', intval($request->filter_group));
+            }
+
+            return DataTables::of($query)
+                ->addIndexColumn()
+                ->addColumn('nama_lokasi_html', function ($row) {
+                    return '<a href="' . url('/panel/lokasi/detailLokasi/' . $row->id_lokasi) . '" class="text-dark text-hover-primary fw-bold">'
+                        . '<i class="bi bi-geo-alt me-2 text-primary"></i>' . e($row->nama_lokasi) . '</a>';
+                })
+                ->addColumn('nama_group_html', function ($row) {
+                    return '<span class="badge badge-light-primary">' . e($row->nama_group ?? '-') . '</span>';
+                })
+                ->addColumn('total_cctv_html', function ($row) {
+                    return '<span class="badge badge-light fw-semibold">' . intval($row->total_cctv) . '</span>';
+                })
+                ->addColumn('aksi', function ($row) {
+                    $detailUrl = url('/panel/lokasi/detailLokasi/' . $row->id_lokasi);
+                    $editUrl   = url('/panel/lokasi/updateLokasi/' . $row->id_lokasi);
+                    $hapusUrl  = url('/panel/lokasi/hapusLokasi/' . $row->id_lokasi);
+                    $namaJs    = addslashes($row->nama_lokasi);
+                    return '<div class="d-flex justify-content-end gap-1">'
+                        . '<a href="' . $detailUrl . '" class="btn btn-sm btn-icon btn-light-primary" title="Detail"><i class="bi bi-eye"></i></a>'
+                        . '<a href="' . $editUrl   . '" class="btn btn-sm btn-icon btn-light-warning" title="Edit"><i class="bi bi-pencil"></i></a>'
+                        . '<a href="' . $hapusUrl  . '" class="btn btn-sm btn-icon btn-light-danger" onclick="return confirm(\"Hapus lokasi ' . $namaJs . '?\")" title="Hapus"><i class="bi bi-trash"></i></a>'
+                        . '</div>';
+                })
+                ->rawColumns(['nama_lokasi_html', 'nama_group_html', 'total_cctv_html', 'aksi'])
+                ->filterColumn('nama_lokasi', function ($q, $keyword) {
+                    $q->where('cv_lokasi.nama_lokasi', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('nama_group', function ($q, $keyword) {
+                    $q->where('cv_lokasi_group.nama_group', 'like', "%{$keyword}%");
+                })
+                ->filterColumn('deskripsi', function ($q, $keyword) {
+                    $q->where('cv_lokasi.deskripsi', 'like', "%{$keyword}%");
+                })
+                ->make(true);
         }
 
         $data            = $this->getCommonData();
         $data['title']   = 'Daftar Lokasi';
         $data['content'] = 'module.lokasi.data';
 
-        // For filter dropdown - get allowed groups
         $allowedGroupIds = AccessHelper::getAllowedGroupIds();
         $groupQuery = DB::table('cv_lokasi_group')->where('status', 'aktif')->orderBy('urutan');
         if ($allowedGroupIds !== null) {
             $groupQuery->whereIn('id_group', $allowedGroupIds);
         }
         $data['grupList'] = $groupQuery->get();
-
-        // Lokasi list with total cctv
-        $lokasiQuery = DB::table('cv_lokasi')
-            ->join('cv_lokasi_group', 'cv_lokasi.id_group', '=', 'cv_lokasi_group.id_group')
-            ->select(
-                'cv_lokasi.*',
-                'cv_lokasi_group.nama_group',
-                DB::raw('(SELECT COUNT(*) FROM cv_cctv WHERE cv_cctv.id_lokasi = cv_lokasi.id_lokasi) as total_cctv')
-            )
-            ->orderBy('cv_lokasi_group.urutan')
-            ->orderBy('cv_lokasi.urutan');
-        if ($allowedGroupIds !== null) {
-            $lokasiQuery->whereIn('cv_lokasi.id_group', $allowedGroupIds);
-        }
-        $data['lokasiList'] = $lokasiQuery->get();
 
         return view('module.content', ['data' => $data]);
     }

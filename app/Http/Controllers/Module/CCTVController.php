@@ -29,27 +29,16 @@ class CCTVController extends Controller
         $data['content'] = 'module.cctv.data';
 
         $allowedGroupIds = AccessHelper::getAllowedGroupIds();
+
         $groupQuery = DB::table('cv_lokasi_group')->where('status', 'aktif');
         if ($allowedGroupIds !== null) $groupQuery->whereIn('id_group', $allowedGroupIds);
         $data['grupList'] = $groupQuery->orderBy('urutan')->get();
 
-        // CCTV list
-        $cctvQuery = DB::table('cv_cctv')
-            ->join('cv_lokasi', 'cv_cctv.id_lokasi', '=', 'cv_lokasi.id_lokasi')
+        $lokasiQuery = DB::table('cv_lokasi')
             ->join('cv_lokasi_group', 'cv_lokasi.id_group', '=', 'cv_lokasi_group.id_group')
-            ->leftJoin('cv_ezviz_akun', 'cv_cctv.id_ezviz_akun', '=', 'cv_ezviz_akun.id_ezviz_akun')
-            ->select(
-                'cv_cctv.*',
-                'cv_lokasi.nama_lokasi',
-                'cv_lokasi_group.nama_group',
-                'cv_ezviz_akun.nama_akun as nama_akun'
-            )
-            ->orderBy('cv_lokasi_group.urutan')
-            ->orderBy('cv_cctv.nama_cctv');
-        if ($allowedGroupIds !== null) {
-            $cctvQuery->whereIn('cv_lokasi_group.id_group', $allowedGroupIds);
-        }
-        $data['cctvList'] = $cctvQuery->get();
+            ->select('cv_lokasi.id_lokasi', 'cv_lokasi.nama_lokasi', 'cv_lokasi.id_group', 'cv_lokasi_group.nama_group');
+        if ($allowedGroupIds !== null) $lokasiQuery->whereIn('cv_lokasi.id_group', $allowedGroupIds);
+        $data['lokasiList'] = $lokasiQuery->orderBy('cv_lokasi_group.nama_group')->orderBy('cv_lokasi.nama_lokasi')->get();
 
         $data['ezvizAkunList'] = DB::table('cv_ezviz_akun')
             ->where('status', 'aktif')
@@ -57,6 +46,95 @@ class CCTVController extends Controller
             ->get();
 
         return view('module.content', ['data' => $data]);
+    }
+
+    // -------------------------------------------------------
+    // DataTables Server-Side - Daftar CCTV
+    // -------------------------------------------------------
+    public function datatablesCCTV(Request $request)
+    {
+        $allowedGroupIds = AccessHelper::getAllowedGroupIds();
+
+        $query = DB::table('cv_cctv')
+            ->join('cv_lokasi', 'cv_cctv.id_lokasi', '=', 'cv_lokasi.id_lokasi')
+            ->join('cv_lokasi_group', 'cv_lokasi.id_group', '=', 'cv_lokasi_group.id_group')
+            ->leftJoin('cv_ezviz_akun', 'cv_cctv.id_ezviz_akun', '=', 'cv_ezviz_akun.id_ezviz_akun')
+            ->select(
+                'cv_cctv.id_cctv',
+                'cv_cctv.nama_cctv',
+                'cv_cctv.device_serial',
+                'cv_cctv.channel_no',
+                'cv_cctv.status',
+                'cv_lokasi.id_lokasi',
+                'cv_lokasi.nama_lokasi',
+                'cv_lokasi_group.id_group',
+                'cv_lokasi_group.nama_group',
+                'cv_ezviz_akun.nama_akun'
+            );
+
+        if ($allowedGroupIds !== null) {
+            $query->whereIn('cv_lokasi_group.id_group', $allowedGroupIds);
+        }
+
+        // Custom column filters
+        if ($request->filled('filter_status')) {
+            $query->where('cv_cctv.status', $request->filter_status);
+        }
+        if ($request->filled('filter_lokasi')) {
+            $query->where('cv_cctv.id_lokasi', intval($request->filter_lokasi));
+        }
+        if ($request->filled('filter_group')) {
+            $query->where('cv_lokasi_group.id_group', intval($request->filter_group));
+        }
+
+        return \Yajra\DataTables\DataTables::of($query)
+            ->addIndexColumn()
+            ->addColumn('nama_cctv_html', function ($row) {
+                return '<a href="' . url('/panel/cctv/detailCCTV/' . $row->id_cctv) . '" class="text-dark text-hover-primary fw-bold">'
+                    . '<i class="bi bi-camera-video me-2 text-primary"></i>' . e($row->nama_cctv) . '</a>';
+            })
+            ->addColumn('nama_lokasi_html', function ($row) {
+                return '<span class="text-muted">' . e($row->nama_lokasi ?? '-') . '</span>';
+            })
+            ->addColumn('nama_group_html', function ($row) {
+                return '<span class="badge badge-light-primary">' . e($row->nama_group ?? '-') . '</span>';
+            })
+            ->addColumn('status_html', function ($row) {
+                if ($row->status === 'online') {
+                    return '<span class="badge badge-success"><i class="bi bi-wifi me-1"></i>Online</span>';
+                } elseif ($row->status === 'offline') {
+                    return '<span class="badge badge-danger"><i class="bi bi-wifi-off me-1"></i>Offline</span>';
+                }
+                return '<span class="badge badge-secondary">Unknown</span>';
+            })
+            ->addColumn('aksi', function ($row) {
+                $detailUrl = url('/panel/cctv/detailCCTV/' . $row->id_cctv);
+                $editUrl   = url('/panel/cctv/updateCCTV/' . $row->id_cctv);
+                $hapusUrl  = url('/panel/cctv/hapusCCTV/' . $row->id_cctv);
+                $namaJs    = addslashes($row->nama_cctv);
+                return '<div class="d-flex justify-content-end gap-1">'
+                    . '<a href="' . $detailUrl . '" class="btn btn-sm btn-icon btn-light-primary" title="Live View"><i class="bi bi-play-circle"></i></a>'
+                    . '<a href="' . $editUrl . '" class="btn btn-sm btn-icon btn-light-warning" title="Edit"><i class="bi bi-pencil"></i></a>'
+                    . '<a href="' . $hapusUrl . '" class="btn btn-sm btn-icon btn-light-danger" onclick="return confirm(\'Hapus CCTV ' . $namaJs . '?\')" title="Hapus"><i class="bi bi-trash"></i></a>'
+                    . '</div>';
+            })
+            ->rawColumns(['nama_cctv_html', 'nama_lokasi_html', 'nama_group_html', 'status_html', 'aksi'])
+            ->filterColumn('nama_cctv', function ($q, $keyword) {
+                $q->where('cv_cctv.nama_cctv', 'like', "%{$keyword}%");
+            })
+            ->filterColumn('nama_lokasi', function ($q, $keyword) {
+                $q->where('cv_lokasi.nama_lokasi', 'like', "%{$keyword}%");
+            })
+            ->filterColumn('nama_group', function ($q, $keyword) {
+                $q->where('cv_lokasi_group.nama_group', 'like', "%{$keyword}%");
+            })
+            ->filterColumn('device_serial', function ($q, $keyword) {
+                $q->where('cv_cctv.device_serial', 'like', "%{$keyword}%");
+            })
+            ->filterColumn('nama_akun', function ($q, $keyword) {
+                $q->where('cv_ezviz_akun.nama_akun', 'like', "%{$keyword}%");
+            })
+            ->make(true);
     }
 
     // -------------------------------------------------------
